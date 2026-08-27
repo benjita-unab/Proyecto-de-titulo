@@ -3,17 +3,36 @@ import { ChatController } from './chat.controller';
 import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { FormatterService } from '../formatter/formatter.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('ChatController', () => {
   let controller: ChatController;
+  let rutasService: RutasService;
 
   beforeEach(async () => {
+    const mockConfigService = {
+      get: jest.fn((key: string) => {
+        if (key === 'SUPABASE_URL') return 'https://mock.supabase.co';
+        if (key === 'SUPABASE_KEY') return 'mock-key';
+        return null;
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChatController],
-      providers: [NlpService, RutasService, FormatterService],
+      providers: [
+        NlpService,
+        RutasService,
+        FormatterService,
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
+      ],
     }).compile();
 
     controller = module.get<ChatController>(ChatController);
+    rutasService = module.get<RutasService>(RutasService);
   });
 
   it('should be defined', () => {
@@ -21,14 +40,21 @@ describe('ChatController', () => {
   });
 
   describe('handleChat', () => {
-    it('should return routes for a known destination', () => {
-      const response = controller.handleChat('cómo llego a la plaza');
+    it('should return routes for a known destination', async () => {
+      // Mock de Supabase para getRoutesForDestination ya que es asíncrono
+      jest.spyOn(rutasService, 'getRoutesForDestination').mockResolvedValue([
+        'Línea 7 - Recorrido: Plaza de Armas, Estadio Municipal',
+      ]);
+
+      const response = await controller.handleChat('cómo llego a la plaza');
       expect(response.text).toContain('Aquí tienes algunas opciones para llegar a plaza');
       expect(response.options.length).toBeGreaterThan(0);
     });
 
-    it('should return a guided message for an unknown destination', () => {
-      const response = controller.handleChat('quiero ir a un lugar inventado');
+    it('should return a guided message for an unknown destination', async () => {
+      jest.spyOn(rutasService, 'getRoutesForDestination').mockResolvedValue([]);
+
+      const response = await controller.handleChat('quiero ir a un lugar inventado');
       expect(response.text).toContain('Lo siento, no he podido reconocer tu destino');
       expect(response.options.length).toBe(0);
     });
