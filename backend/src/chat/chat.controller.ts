@@ -12,7 +12,7 @@ export class ChatController {
   ) {}
 
   @Post()
-  handleChat(@Body('text') text: string) {
+  async handleChat(@Body('text') text: string) {
     if (!text) {
       return { text: 'No he recibido ningún texto.' };
     }
@@ -20,7 +20,7 @@ export class ChatController {
     const { intent, destination } = this.nlpService.processQuery(text);
 
     if (intent === 'Buscar Ruta' && destination) {
-      const routes = this.rutasService.getRoutesForDestination(destination);
+      const routes = await this.rutasService.getRoutesForDestination(destination);
       return this.formatterService.formatRouteResponse(destination, routes);
     }
 
