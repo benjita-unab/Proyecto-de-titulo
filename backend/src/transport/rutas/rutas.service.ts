@@ -18,7 +18,7 @@ export class RutasService {
     }
   }
 
-  async getRoutesForDestination(destination: string): Promise<string[]> {
+  async getRoutesForDestination(destination: string): Promise<any[]> {
     if (!this.supabase) {
       this.logger.error('Cliente Supabase no inicializado');
       return [];
@@ -48,15 +48,20 @@ export class RutasService {
       }
 
       // Extraer y formatear la respuesta
-      const formattedRoutes = data.map((route: any) => {
+      const structuredRoutes = data.map((route: any) => {
         // En Supabase, si la relación es 1 a 1, MEDIO_TRANSPORTE vendrá como objeto, sino como array.
-        // Asumiendo que viene como objeto porque RECORRIDO_TRANSPORTE pertenece a un MEDIO_TRANSPORTE
         const medio = Array.isArray(route.MEDIO_TRANSPORTE) ? route.MEDIO_TRANSPORTE[0] : route.MEDIO_TRANSPORTE;
         const nombreLinea = medio?.nombre_linea || route.nombre_recorrido;
-        return `${nombreLinea} - Recorrido: ${route.calles_principales}`;
+        const tipoTransporte = medio?.tipo_transporte || 'Desconocido';
+        
+        return {
+          linea: nombreLinea,
+          recorrido: route.calles_principales,
+          tipo: tipoTransporte,
+        };
       });
 
-      return formattedRoutes;
+      return structuredRoutes;
     } catch (err) {
       this.logger.error(`Error inesperado al buscar rutas: ${err}`);
       return [];
