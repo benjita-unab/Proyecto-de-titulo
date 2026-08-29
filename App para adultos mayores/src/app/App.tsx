@@ -23,65 +23,37 @@ function nowTime(): string {
 
 const knowledge: { keywords: string[]; response: string }[] = [
   {
+    keywords: ["hospital", "salud", "urgencia"],
+    response:
+      "Aquí tiene 2 opciones para llegar al Hospital de Limache:\n\n🚌 *Línea 1 (Micro)*\nRecorrido: Avenida Urmeneta, Palmira Romano Sur, hasta el Hospital.\n\n🚕 *Línea 18 (Colectivo)*\nRecorrido: San Alfonso, República, hasta el Hospital.",
+  },
+  {
+    keywords: ["plaza", "centro", "municipalidad"],
+    response:
+      "Aquí tiene 2 opciones para llegar a la Plaza de Limache:\n\n🚌 *Línea 7 (Micro)*\nRecorrido: Estación Limache, Avenida Urmeneta, Plaza de Armas.\n\n🚕 *Línea 22 (Colectivo)*\nRecorrido: 18 de Septiembre, República, Plaza de Armas.",
+  },
+  {
     keywords: ["ruta", "rutas", "línea", "líneas", "adónde va", "donde va", "recorrido"],
     response:
-      "🚌 *Recorridos de buses disponibles:*\n\n📍 *Línea 1* – Terminal ↔ Hospital Central\n📍 *Línea 3* – Mercado Central ↔ Villa Norte\n📍 *Línea 7* – Plaza de Armas ↔ Estadio Municipal\n📍 *Línea 12* – Universidad ↔ Aeropuerto\n📍 *Línea 15* – Centro ↔ Sector Sur\n\nDígame desde qué sector necesita viajar y le indico qué línea tomar.",
+      "Dígame a qué lugar de Limache necesita ir (por ejemplo, 'al hospital' o 'a la plaza') y le indicaré qué líneas tomar.",
   },
   {
     keywords: ["tarifa", "precio", "costo", "pasaje", "cuánto vale", "cuanto vale", "cuánto cuesta el bus", "pagar bus"],
     response:
-      "💰 *Tarifas de buses:*\n\n👴 *Adulto Mayor* con Pase Libre → *$0 (gratuito)*\n🎓 *Estudiante* → $280\n👤 *Adulto general* → $800\n\n⏰ En horario valle (fuera de hora punta) hay un 15% de descuento adicional para todos.\n\n¿Desea saber cómo obtener su Pase Libre gratuito?",
-  },
-  {
-    keywords: ["pase libre", "pase", "gratuito", "gratis", "beneficio", "adulto mayor"],
-    response:
-      "🎫 *Pase Libre para Adulto Mayor:*\n\nCon este pase viaja *sin costo* en todos los buses de la ciudad.\n\n*Cómo obtenerlo:*\n1️⃣ Vaya al municipio con su carnet de identidad vigente.\n2️⃣ Solicite el formulario de Pase Libre en la ventanilla.\n3️⃣ Adjunte una foto carné y fotocopia de su carnet.\n4️⃣ Espere entre 15 y 30 días hábiles.\n5️⃣ Recibe su pase en su domicilio.\n\n✅ No tiene costo tramitarlo.",
-  },
-  {
-    keywords: ["paradero", "parada", "dónde espero", "donde espero", "dónde tomo", "dónde subo"],
-    response:
-      "📍 *Cómo encontrar su paradero:*\n\n🔵 Los paraderos tienen un letrero con el número de línea.\n🔵 Espere siempre en la vereda, nunca en la calzada.\n🔵 Levante la mano para que el conductor vea que subirá.\n🔵 El bus se detiene solo si ve a alguien esperando.\n\n💡 Si no conoce el paradero más cercano, pregúntele a un vecino o comerciante del sector.",
-  },
-  {
-    keywords: ["horario", "cuando pasa", "cuándo pasa", "frecuencia", "a qué hora", "primer bus", "último bus"],
-    response:
-      "🕐 *Horarios de buses:*\n\n🌅 *Primer bus:* 6:00 hrs\n🌙 *Último bus:* 22:30 hrs\n\n⚡ *Hora punta* (buses más frecuentes):\n• Mañana: 7:00 – 9:00 hrs\n• Tarde: 17:00 – 20:00 hrs\n\n😌 *Fuera de hora punta* va más cómodo y hay menos gente.\n\nLe recomendamos viajar entre las 10:00 y las 16:00 para mayor tranquilidad.",
-  },
-  {
-    keywords: ["asiento", "preferencial", "derecho", "prioridad"],
-    response:
-      "🪑 *Asiento preferencial en buses:*\n\nComo adulto mayor, *tiene derecho por ley* al asiento preferencial.\n\n✅ Los asientos delanteros están reservados para usted.\n✅ Si están ocupados, puede pedirle cortésmente al pasajero que le ceda el lugar.\n✅ El conductor puede intervenir si alguien se niega.\n✅ No necesita justificar por qué lo necesita.\n\n⚠️ Si alguien le falta el respeto, anote el número del bus y denuncie a la empresa.",
-  },
-  {
-    keywords: ["radio taxi", "radiotaxi", "taxi", "llamar taxi", "pedir taxi", "número taxi"],
-    response:
-      "🚕 *Radio Taxis de confianza:*\n\n📞 *Radio Taxi Central* → 222 333 444\n📞 *Radio Taxi Seguro* → 222 555 666\n📞 *Radio Taxi Express* → 222 777 888\n📞 *Radio Taxi 24 Horas* → 222 999 000\n\n*Al llamar, diga:*\n• Su nombre completo\n• Su dirección exacta\n• A dónde necesita ir\n\n⚠️ Anote siempre la *patente* y el *nombre del conductor* antes de subir.",
-  },
-  {
-    keywords: ["precio taxi", "cuánto cuesta taxi", "cuanto cuesta taxi", "tarifa taxi", "cobran taxi", "valor taxi"],
-    response:
-      "💰 *Tarifas de Radio Taxi:*\n\n🏁 *Bajada de bandera:* $1.500\n📏 *Por kilómetro:* $550\n⏱️ *Por minuto de espera:* $200\n\n*Ejemplos orientativos:*\n• Dentro del barrio → ~$2.500\n• Centro a Hospital → ~$3.500\n• Centro a Aeropuerto → ~$8.000\n\n💡 Siempre pregunte el precio estimado *antes de subir* al taxi.",
-  },
-  {
-    keywords: ["seguro", "seguridad", "confiable", "estafa", "peligro", "precaución"],
-    response:
-      "🛡️ *Cómo viajar seguro en Radio Taxi:*\n\n✅ Llame siempre a empresas conocidas de radio taxi.\n✅ Anote la patente del auto y el nombre del conductor.\n✅ Avise a un familiar a dónde va y cuándo llegará.\n✅ Lleve el dinero justo o pregunte si aceptan tarjeta.\n✅ Viaje con el celular cargado.\n\n❌ *Nunca* suba a un taxi que le ofrezca el viaje directamente en la calle.",
-  },
-  {
-    keywords: ["accesible", "rampa", "silla de ruedas", "bastón", "discapacidad", "movilidad"],
-    response:
-      "♿ *Transporte accesible para adultos mayores:*\n\n🚌 *Buses accesibles:*\n• Busque el símbolo de silla de ruedas en el bus.\n• Tienen rampa y espacio especial.\n• Suba por la puerta delantera e indique que necesita la rampa.\n\n🚕 *Radio Taxi accesible:*\n• Al llamar, pida expresamente un taxi adaptado.\n• Algunos tienen rampa para silla de ruedas.\n• Confirme el precio antes del viaje.",
-  },
+      "💰 *Tarifas de buses:*\n\n👴 *Adulto Mayor* con Pase Libre → *$0 (gratuito)*\n🎓 *Estudiante* → $280\n👤 *Adulto general* → $800\n\n¿Desea saber cómo obtener su Pase Libre gratuito?",
+  }
 ];
 
 function getBotResponse(text: string): string {
   const lower = text.toLowerCase();
+  
+  // Buscar coincidencia en la base de conocimientos
   for (const item of knowledge) {
     if (item.keywords.some((k) => lower.includes(k))) return item.response;
   }
-  return (
-    "Lo siento, no encontré información sobre eso. 😊\n\nPuede preguntarme sobre:\n\n🚌 *Buses*\n• Rutas y recorridos\n• Tarifas y pase libre\n• Horarios y paraderos\n• Asientos preferenciales\n\n🚕 *Radio Taxi*\n• Números de contacto\n• Tarifas\n• Consejos de seguridad"
-  );
+  
+  // Respuesta guiada cuando no se reconoce el destino o la intención (Sin error técnico)
+  return "Lo siento, no pude reconocer su destino. 😌\n\n¿Podría decirme a qué calle o lugar de Limache desea llegar?\n\nPor ejemplo, puede decir: *'Quiero ir al hospital'* o *'Cómo llego a la plaza'*";
 }
 
 // ─── Quick Actions ────────────────────────────────────────────────────────────
