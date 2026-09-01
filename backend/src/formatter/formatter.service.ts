@@ -5,7 +5,7 @@ export class FormatterService {
   formatRouteResponse(destination: string, routes: any[]) {
     if (!destination || !routes || routes.length === 0) {
       return {
-        text: 'Lo siento, no pude reconocer su destino. 😌\n\n¿Podría decirme a qué calle o lugar de Limache desea llegar?\n\nPor ejemplo, puede decir: *\'Quiero ir al hospital\'* o *\'Cómo llego a la plaza\'*',
+        text: 'Lo siento, no pude reconocer su destino. 😌\n\n¿Podría intentar con alguno de estos destinos conocidos en Limache?\n- Hospital\n- Cesfam\n- Plaza\n- Estación\n- Estadio\n\nPor ejemplo, puede decir: *\'Quiero ir al hospital\'* o *\'Cómo llego a la plaza\'*',
         options: []
       };
     }

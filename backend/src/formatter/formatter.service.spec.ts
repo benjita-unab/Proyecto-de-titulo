@@ -46,12 +46,15 @@ describe('FormatterService', () => {
       expect(response.text).toContain('Recorrido: Calle A.');
     });
 
-    it('debe retornar una respuesta amigable y sin errores técnicos por destino no reconocido', () => {
+    it('debe retornar una respuesta amigable con sugerencias de destinos por destino no reconocido', () => {
       const response = service.formatRouteResponse('planeta marte', []);
       
       expect(response.options.length).toBe(0);
       expect(response.text).toContain('Lo siento, no pude reconocer su destino.');
-      expect(response.text).toContain('¿Podría decirme a qué calle o lugar de Limache desea llegar?');
+      expect(response.text).toContain('¿Podría intentar con alguno de estos destinos conocidos en Limache?');
+      expect(response.text).toContain('- Hospital');
+      expect(response.text).toContain('- Cesfam');
+      expect(response.text).toContain('- Plaza');
       expect(response.text).toContain("*'Quiero ir al hospital'*");
       // Verifica que no hay códigos técnicos como "Error 404" o "Exception"
       expect(response.text).not.toContain('Error');
