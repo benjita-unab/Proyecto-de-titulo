@@ -43,11 +43,11 @@ describe('ChatController', () => {
     it('should return routes for a known destination', async () => {
       // Mock de Supabase para getRoutesForDestination ya que es asíncrono
       jest.spyOn(rutasService, 'getRoutesForDestination').mockResolvedValue([
-        'Línea 7 - Recorrido: Plaza de Armas, Estadio Municipal',
+        { linea: 'Línea 7', tipo: 'Micro', recorrido: 'Plaza de Armas, Estadio Municipal' },
       ]);
 
       const response = await controller.handleChat('cómo llego a la plaza');
-      expect(response.text).toContain('Aquí tienes algunas opciones para llegar a plaza');
+      expect(response.text).toContain('Aquí tiene 1 opción(es) para llegar a plaza');
       expect(response.options.length).toBeGreaterThan(0);
     });
 
@@ -55,7 +55,7 @@ describe('ChatController', () => {
       jest.spyOn(rutasService, 'getRoutesForDestination').mockResolvedValue([]);
 
       const response = await controller.handleChat('quiero ir a un lugar inventado');
-      expect(response.text).toContain('Lo siento, no he podido reconocer tu destino');
+      expect(response.text).toContain('Lo siento, no pude reconocer su destino');
       expect(response.options.length).toBe(0);
     });
   });
