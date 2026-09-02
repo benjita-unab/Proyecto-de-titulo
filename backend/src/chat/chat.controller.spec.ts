@@ -47,7 +47,7 @@ describe('ChatController', () => {
       ]);
 
       const response = await controller.handleChat('cómo llego a la plaza');
-      expect(response.text).toContain('Aquí tiene 1 opción(es) para llegar a plaza');
+      expect(response.text).toContain('Aquí tienes opciones para llegar a plaza');
       expect(response.options.length).toBeGreaterThan(0);
     });
 
@@ -55,7 +55,7 @@ describe('ChatController', () => {
       jest.spyOn(rutasService, 'getRoutesForDestination').mockResolvedValue([]);
 
       const response = await controller.handleChat('quiero ir a un lugar inventado');
-      expect(response.text).toContain('Lo siento, no pude reconocer su destino');
+      expect(response.text).toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir');
       expect(response.options.length).toBe(0);
     });
   });

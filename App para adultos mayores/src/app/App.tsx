@@ -19,43 +19,6 @@ function nowTime(): string {
   return new Date().toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 }
 
-// ─── Bot knowledge base ───────────────────────────────────────────────────────
-
-const knowledge: { keywords: string[]; response: string }[] = [
-  {
-    keywords: ["hospital", "salud", "urgencia"],
-    response:
-      "Aquí tiene 2 opciones para llegar al Hospital de Limache:\n\n🚌 *Línea 1 (Micro)*\nRecorrido: Avenida Urmeneta, Palmira Romano Sur, hasta el Hospital.\n\n🚕 *Línea 18 (Colectivo)*\nRecorrido: San Alfonso, República, hasta el Hospital.",
-  },
-  {
-    keywords: ["plaza", "centro", "municipalidad"],
-    response:
-      "Aquí tiene 2 opciones para llegar a la Plaza de Limache:\n\n🚌 *Línea 7 (Micro)*\nRecorrido: Estación Limache, Avenida Urmeneta, Plaza de Armas.\n\n🚕 *Línea 22 (Colectivo)*\nRecorrido: 18 de Septiembre, República, Plaza de Armas.",
-  },
-  {
-    keywords: ["ruta", "rutas", "línea", "líneas", "adónde va", "donde va", "recorrido"],
-    response:
-      "Dígame a qué lugar de Limache necesita ir (por ejemplo, 'al hospital' o 'a la plaza') y le indicaré qué líneas tomar.",
-  },
-  {
-    keywords: ["tarifa", "precio", "costo", "pasaje", "cuánto vale", "cuanto vale", "cuánto cuesta el bus", "pagar bus"],
-    response:
-      "💰 *Tarifas de buses:*\n\n👴 *Adulto Mayor* con Pase Libre → *$0 (gratuito)*\n🎓 *Estudiante* → $280\n👤 *Adulto general* → $800\n\n¿Desea saber cómo obtener su Pase Libre gratuito?",
-  }
-];
-
-function getBotResponse(text: string): string {
-  const lower = text.toLowerCase();
-  
-  // Buscar coincidencia en la base de conocimientos
-  for (const item of knowledge) {
-    if (item.keywords.some((k) => lower.includes(k))) return item.response;
-  }
-  
-  // Respuesta guiada cuando no se reconoce el destino o la intención (Sin error técnico)
-  return "Lo siento, no pude reconocer su destino. 😌\n\n¿Podría decirme a qué calle o lugar de Limache desea llegar?\n\nPor ejemplo, puede decir: *'Quiero ir al hospital'* o *'Cómo llego a la plaza'*";
-}
-
 // ─── Quick Actions ────────────────────────────────────────────────────────────
 
 const quickActions = [
@@ -119,7 +82,7 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setShowQuick(false);
 
@@ -135,19 +98,43 @@ export default function App() {
     setInputText("");
     setIsTyping(true);
 
-    const delay = 1200 + Math.random() * 700;
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:3000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.trim() }),
+      });
+      
+      let botResponseText = "Hubo un error de conexión con el asistente.";
+      if (response.ok) {
+        const data = await response.json();
+        botResponseText = data.text;
+      }
+
       const botMsg: Message = {
         id: _nextId++,
         from: "bot",
-        text: getBotResponse(text),
+        text: botResponseText,
+        time: nowTime(),
+      };
+
+      setMessages((prev) =>
+        [...prev.map((m) => (m.id === userMsg.id ? { ...m, read: true } : m)), botMsg]
+      );
+    } catch (error) {
+      console.error("Error fetching bot response:", error);
+      const botMsg: Message = {
+        id: _nextId++,
+        from: "bot",
+        text: "Lo siento, tuve un problema de conexión. 😌📡",
         time: nowTime(),
       };
       setMessages((prev) =>
         [...prev.map((m) => (m.id === userMsg.id ? { ...m, read: true } : m)), botMsg]
       );
+    } finally {
       setIsTyping(false);
-    }, delay);
+    }
   }, []);
 
   const handleSend = () => { sendMessage(inputText); inputRef.current?.focus(); };
