@@ -17,7 +17,7 @@ describe('FormatterService', () => {
   });
 
   describe('formatRouteResponse', () => {
-    it('debe retornar máximo 2 alternativas si recibe más de 2 rutas', () => {
+    it('debe retornar hasta 4 alternativas y formatear correctamente con enlace a Google Maps', () => {
       const routes = [
         { linea: 'Línea 1', recorrido: 'Calle A', tipo: 'Micro' },
         { linea: 'Línea 2', recorrido: 'Calle B', tipo: 'Colectivo' },
@@ -26,36 +26,20 @@ describe('FormatterService', () => {
       
       const response = service.formatRouteResponse('hospital', routes);
       
-      expect(response.options.length).toBe(2);
+      expect(response.options.length).toBe(3);
       expect(response.options[0].linea).toBe('Línea 1');
-      expect(response.options[1].linea).toBe('Línea 2');
-      expect(response.text).toContain('Aquí tiene 2 opción(es)');
-      expect(response.text).not.toContain('Línea 3');
+      expect(response.text).toContain('Aquí tienes opciones para llegar a hospital');
+      expect(response.text).toContain('🚌 *Línea 1 (Microbús Agdabus)*');
+      expect(response.text).toContain('Pasa por: Calle A.');
+      expect(response.text).toContain('https://www.google.com/maps/dir/?api=1&destination=hospital%20Limache&travelmode=transit');
     });
 
-    it('debe devolver texto accesible con nombres en negrita (* *) y saltos de línea (\\n)', () => {
-      const routes = [
-        { linea: 'Línea 1', recorrido: 'Calle A', tipo: 'Micro' }
-      ];
-      
-      const response = service.formatRouteResponse('hospital', routes);
-      
-      // Verifica nombres en negrita (Markdown) y emojis
-      expect(response.text).toContain('🚌 *Línea 1 (Micro)*');
-      // Verifica la organización en párrafos cortos
-      expect(response.text).toContain('Recorrido: Calle A.');
-    });
-
-    it('debe retornar una respuesta amigable con sugerencias de destinos por destino no reconocido', () => {
+    it('debe retornar una respuesta amigable y guiada por destino no reconocido', () => {
       const response = service.formatRouteResponse('planeta marte', []);
       
       expect(response.options.length).toBe(0);
-      expect(response.text).toContain('Lo siento, no pude reconocer su destino.');
-      expect(response.text).toContain('¿Podría intentar con alguno de estos destinos conocidos en Limache?');
-      expect(response.text).toContain('- Hospital');
-      expect(response.text).toContain('- Cesfam');
-      expect(response.text).toContain('- Plaza');
-      expect(response.text).toContain("*'Quiero ir al hospital'*");
+      expect(response.text).toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir.');
+      expect(response.text).toContain('¿Me podrías indicar si vas al Hospital Santo Tomás, a la Estación Limache, al Centro o a la Plaza de las 40 Horas?');
       // Verifica que no hay códigos técnicos como "Error 404" o "Exception"
       expect(response.text).not.toContain('Error');
       expect(response.text).not.toContain('undefined');
@@ -65,7 +49,7 @@ describe('FormatterService', () => {
       const response = service.formatRouteResponse('hospital', null as any);
       
       expect(response.options.length).toBe(0);
-      expect(response.text).toContain('Lo siento, no pude reconocer su destino.');
+      expect(response.text).toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir.');
     });
   });
 });

@@ -17,35 +17,47 @@ describe('NlpService', () => {
   });
 
   describe('cleanText', () => {
-    it('should clean text properly (remove accents and punctuation)', () => {
+    it('should clean text properly (remove accents, punctuation, and politeness)', () => {
       expect(service.cleanText('¿Cómo llego a la Plaza?')).toBe('como llego a la plaza');
       expect(service.cleanText('Micro al Cesfam!')).toBe('micro al cesfam');
+      expect(service.cleanText('Hola Cómo estás Mira Necesito que me entregues directamente una línea de bus que pase directamente por el hospital Santo Tomás por favor')).toBe('pase directamente por el hospital santo tomas');
     });
   });
 
   describe('extractDestination', () => {
-    it('should extract known destinations', () => {
+    it('should extract destination using regex patterns', () => {
       const clean1 = service.cleanText('¿Cómo llego a la plaza?');
       expect(service.extractDestination(clean1)).toBe('plaza');
 
-      const clean2 = service.cleanText('Micro al cesfam');
-      expect(service.extractDestination(clean2)).toBe('cesfam');
+      const clean2 = service.cleanText('quiero ir a un lugar bonito');
+      expect(service.extractDestination(clean2)).toBe('lugar bonito');
+      
+      const clean3 = service.cleanText('Hola Cómo estás Mira Necesito que me entregues directamente una línea de bus que pase directamente por el hospital Santo Tomás por favor');
+      expect(service.extractDestination(clean3)).toBe('hospital santo tomas');
     });
 
-    it('should return null for unknown destinations', () => {
-      const clean = service.cleanText('Quiero ir a un lugar desconocido');
+    it('should use fallback for phrases without patterns up to 8 words', () => {
+      const clean = service.cleanText('hospital');
+      expect(service.extractDestination(clean)).toBe('hospital');
+
+      const clean40 = service.cleanText('a la plaza de las 40 horas');
+      expect(service.extractDestination(clean40)).toBe('plaza de las 40 horas');
+    });
+
+    it('should return null for very long phrases with unknown intent', () => {
+      const clean = service.cleanText('no se de que estoy hablando en este texto extremadamente largo que pasa de las ocho palabras sin destinos');
       expect(service.extractDestination(clean)).toBeNull();
     });
   });
 
   describe('processQuery', () => {
-    it('should return Buscar Ruta intent and destination if recognized', () => {
+    it('should return Buscar Ruta intent and destination if regex matches', () => {
       const result = service.processQuery('¿Cómo llego a la Plaza?');
       expect(result).toEqual({ intent: 'Buscar Ruta', destination: 'plaza' });
     });
 
-    it('should return unknown intent if destination is not recognized', () => {
-      const result = service.processQuery('Quiero ir a la luna');
+    it('should return unknown intent if text is too long and has no pattern', () => {
+      const result = service.processQuery('Ayer fui a comprar pan y no me dieron vuelto porque no se qué pasó');
       expect(result).toEqual({ intent: 'unknown', destination: null });
     });
   });

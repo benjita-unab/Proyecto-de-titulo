@@ -38,16 +38,15 @@ describe('RutasService', () => {
         {
           nombre_recorrido: 'Centro',
           calles_principales: 'Calle 1, Calle 2, Hospital',
-          MEDIO_TRANSPORTE: {
+          medio_transporte: {
             nombre_linea: 'Línea 10',
             tipo_transporte: 'Micro',
           },
         },
       ];
 
-      // Simulamos la cadena de llamadas de supabase: from().select().ilike()
-      const mockIlike = jest.fn().mockResolvedValue({ data: mockData, error: null });
-      const mockSelect = jest.fn().mockReturnValue({ ilike: mockIlike });
+      // Simulamos la cadena de llamadas de supabase: from().select()
+      const mockSelect = jest.fn().mockResolvedValue({ data: mockData, error: null });
       const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
 
       (service as any).supabase = { from: mockFrom };
@@ -55,8 +54,8 @@ describe('RutasService', () => {
       const result = await service.getRoutesForDestination('hospital');
 
       // Verificamos que se llame a supabase
-      expect(mockFrom).toHaveBeenCalledWith('RECORRIDO_TRANSPORTE');
-      expect(mockIlike).toHaveBeenCalledWith('calles_principales', '%hospital%');
+      expect(mockFrom).toHaveBeenCalledWith('recorrido_transporte');
+      expect(mockSelect).toHaveBeenCalled();
 
       // Validar que el retorno sea un objeto estructurado y NO un string plano pre-concatenado
       expect(Array.isArray(result)).toBe(true);
@@ -73,17 +72,22 @@ describe('RutasService', () => {
     });
 
     it('debe manejar errores de Supabase y devolver un arreglo vacío', async () => {
-      const mockIlike = jest.fn().mockResolvedValue({ data: null, error: new Error('DB Error') });
-      const mockSelect = jest.fn().mockReturnValue({ ilike: mockIlike });
+      const mockSelect = jest.fn().mockResolvedValue({ data: null, error: new Error('DB Error') });
       (service as any).supabase = { from: jest.fn().mockReturnValue({ select: mockSelect }) };
 
       const result = await service.getRoutesForDestination('error');
       expect(result).toEqual([]);
     });
 
-    it('debe devolver un arreglo vacío si no hay coincidencias', async () => {
-      const mockIlike = jest.fn().mockResolvedValue({ data: [], error: null });
-      const mockSelect = jest.fn().mockReturnValue({ ilike: mockIlike });
+    it('debe devolver un arreglo vacío si no hay coincidencias locales', async () => {
+      const mockData = [
+        {
+          nombre_recorrido: 'Centro',
+          calles_principales: 'Calle 1, Calle 2',
+          medio_transporte: { nombre_linea: 'Línea 10' }
+        }
+      ];
+      const mockSelect = jest.fn().mockResolvedValue({ data: mockData, error: null });
       (service as any).supabase = { from: jest.fn().mockReturnValue({ select: mockSelect }) };
 
       const result = await service.getRoutesForDestination('marte');
