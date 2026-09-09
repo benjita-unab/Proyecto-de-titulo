@@ -48,22 +48,47 @@ interface HorariosCardProps {
 }
 
 export const HorariosCard: React.FC<HorariosCardProps> = ({
-  data = HORARIOS_DEFAULT_AGDABUS,
+  data,
   customCurrentDate,
 }) => {
-  // Evaluación en tiempo real según la hora del teléfono del adulto mayor
+  // Extraer franjas de forma segura tanto si vienen como `franjas` o como `horarios`
+  const franjas: FranjaHoraria[] = useMemo(() => {
+    if (data?.franjas && Array.isArray(data.franjas) && data.franjas.length > 0) {
+      return data.franjas;
+    }
+    const anyData = data as any;
+    if (anyData?.horarios && Array.isArray(anyData.horarios) && anyData.horarios.length > 0) {
+      return anyData.horarios;
+    }
+    return HORARIOS_DEFAULT_AGDABUS.franjas;
+  }, [data]);
+
+  const linea = data?.linea || (data as any)?.linea || HORARIOS_DEFAULT_AGDABUS.linea;
+  const empresa = data?.empresa || (data as any)?.empresa || HORARIOS_DEFAULT_AGDABUS.empresa;
+
+  // Evaluación del estado: usar el del backend si viene, o calcularlo localmente
   const statusInfo = useMemo(() => {
+    const anyData = data as any;
+    if (anyData && anyData.badgeText && anyData.detail) {
+      return {
+        isOutOfService: Boolean(anyData.isOutOfService),
+        badgeText: anyData.badgeText,
+        detail: anyData.detail,
+        franjaActiva: anyData.franjaActiva || null,
+      };
+    }
+
     const now = customCurrentDate || new Date();
     const dayOfWeek = now.getDay(); // 0: Domingo, 1-5: Lunes a Viernes, 6: Sábado
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     let currentFranja: FranjaHoraria | undefined;
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      currentFranja = data.franjas.find((f) => f.tipoDia === 'semana');
+      currentFranja = franjas.find((f) => f.tipoDia === 'semana');
     } else if (dayOfWeek === 6) {
-      currentFranja = data.franjas.find((f) => f.tipoDia === 'sabado');
+      currentFranja = franjas.find((f) => f.tipoDia === 'sabado');
     } else {
-      currentFranja = data.franjas.find((f) => f.tipoDia === 'domingo');
+      currentFranja = franjas.find((f) => f.tipoDia === 'domingo');
     }
 
     if (!currentFranja) {
@@ -113,7 +138,7 @@ export const HorariosCard: React.FC<HorariosCardProps> = ({
         franjaActiva: currentFranja,
       };
     }
-  }, [data, customCurrentDate]);
+  }, [data, franjas, customCurrentDate]);
 
   return (
     <Card
@@ -205,11 +230,11 @@ export const HorariosCard: React.FC<HorariosCardProps> = ({
             className="font-extrabold text-gray-900 leading-snug"
             style={{ fontSize: '19px' }}
           >
-            🚌 {data.linea}
+            🚌 {linea}
           </p>
-          {data.empresa && (
+          {empresa && (
             <p className="text-gray-600 font-medium" style={{ fontSize: '16px' }}>
-              {data.empresa}
+              {empresa}
             </p>
           )}
         </div>
@@ -217,7 +242,7 @@ export const HorariosCard: React.FC<HorariosCardProps> = ({
         {/* CA-2.1: Mostrar el 100% de los horarios de inicio y término para días de semana, sábados y domingos */}
         {/* CA-2.3: El texto del horario debe tener un tamaño mínimo de 18 píxeles */}
         <div className="flex flex-col gap-3">
-          {data.franjas.map((franja) => {
+          {franjas.map((franja) => {
             const isToday = statusInfo.franjaActiva?.tipoDia === franja.tipoDia;
             return (
               <div

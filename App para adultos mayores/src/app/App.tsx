@@ -110,7 +110,10 @@ export default function App() {
       const response = await fetch('http://localhost:3000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text.trim() }),
+        body: JSON.stringify({
+          text: text.trim(),
+          clientTime: new Date().toISOString(),
+        }),
       });
 
       let botResponseText = "Hubo un error de conexión con el asistente.";

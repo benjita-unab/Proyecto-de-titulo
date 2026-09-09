@@ -4,6 +4,20 @@ import { Injectable } from '@nestjs/common';
 export class NlpService {
   processQuery(text: string) {
     const cleanText = this.cleanText(text);
+
+    // Detectar consulta de horarios
+    const isScheduleQuery =
+      /horario|horarios|primera salida|primer bus|ultima salida|última salida|ultimo bus|último bus|a que hora|a qué hora|hasta que hora|hasta qué hora|frecuencia/i.test(
+        text,
+      );
+
+    if (isScheduleQuery) {
+      return {
+        intent: 'Consultar Horario',
+        destination: null,
+      };
+    }
+
     const destination = this.extractDestination(cleanText);
 
     if (!destination) {
