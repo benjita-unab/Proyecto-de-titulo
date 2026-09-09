@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Mic, MicOff, Bus, Phone } from "lucide-react";
+import { HorariosCard, HorarioTransporteData } from "./components/HorariosCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -11,6 +12,8 @@ interface Message {
   text: string;
   time: string;
   read?: boolean;
+  showHorarios?: boolean;
+  horariosData?: HorarioTransporteData;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -98,17 +101,35 @@ export default function App() {
     setInputText("");
     setIsTyping(true);
 
+    const isScheduleQuery =
+      /horario|primera salida|ultima salida|última salida|primer bus|ultimo bus|último bus|a que hora|a qué hora/i.test(
+        text
+      );
+
     try {
       const response = await fetch('http://localhost:3000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: text.trim() }),
       });
-      
+
       let botResponseText = "Hubo un error de conexión con el asistente.";
+      let showHorarios = false;
+      let horariosData = undefined;
+
       if (response.ok) {
         const data = await response.json();
-        botResponseText = data.text;
+        showHorarios = Boolean(data.showHorarios || isScheduleQuery);
+        horariosData = data.horarios;
+
+        if (isScheduleQuery) {
+          botResponseText = "Aquí tiene los horarios de operación de las micros:";
+        } else {
+          botResponseText = data.text;
+        }
+      } else if (isScheduleQuery) {
+        botResponseText = "Aquí tiene los horarios de operación de las micros:";
+        showHorarios = true;
       }
 
       const botMsg: Message = {
@@ -116,6 +137,8 @@ export default function App() {
         from: "bot",
         text: botResponseText,
         time: nowTime(),
+        showHorarios,
+        horariosData,
       };
 
       setMessages((prev) =>
@@ -123,11 +146,20 @@ export default function App() {
       );
     } catch (error) {
       console.error("Error fetching bot response:", error);
+      let botResponseText = "Lo siento, tuve un problema de conexión. 😌📡";
+      let showHorarios = false;
+
+      if (isScheduleQuery) {
+        botResponseText = "Aquí tiene los horarios de operación de las micros:";
+        showHorarios = true;
+      }
+
       const botMsg: Message = {
         id: _nextId++,
         from: "bot",
-        text: "Lo siento, tuve un problema de conexión. 😌📡",
+        text: botResponseText,
         time: nowTime(),
+        showHorarios,
       };
       setMessages((prev) =>
         [...prev.map((m) => (m.id === userMsg.id ? { ...m, read: true } : m)), botMsg]
@@ -229,18 +261,25 @@ export default function App() {
                 borderRadius: msg.from === "user"
                   ? "18px 4px 18px 18px"
                   : "4px 18px 18px 18px",
-                maxWidth: "78%",
+                maxWidth: msg.showHorarios ? "95%" : "84%",
                 minWidth: 80,
               }}
             >
               <p
                 className="leading-relaxed whitespace-pre-wrap break-words"
-                style={{ fontSize: 17, color: "#111B21" }}
+                style={{ fontSize: 18, color: "#111B21" }}
               >
                 <FormattedText text={msg.text} />
               </p>
+
+              {msg.showHorarios && (
+                <div className="mt-2 w-full">
+                  <HorariosCard data={msg.horariosData} />
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-1 mt-1.5">
-                <span style={{ fontSize: 11, color: "#8696A0" }}>{msg.time}</span>
+                <span style={{ fontSize: 12, color: "#8696A0" }}>{msg.time}</span>
                 {msg.from === "user" && (
                   <span
                     style={{
