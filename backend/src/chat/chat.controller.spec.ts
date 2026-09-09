@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatController } from './chat.controller';
 import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
+import { HorariosService } from '../transport/horarios/horarios.service';
 import { FormatterService } from '../formatter/formatter.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -23,6 +24,7 @@ describe('ChatController', () => {
       providers: [
         NlpService,
         RutasService,
+        HorariosService,
         FormatterService,
         {
           provide: ConfigService,
@@ -58,5 +60,15 @@ describe('ChatController', () => {
       expect(response.text).toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir');
       expect(response.options.length).toBe(0);
     });
+
+    it('should return schedule information and showHorarios flag when asking for horarios', async () => {
+      const response = await controller.handleChat('¿Cuáles son los horarios de los buses?', '2026-09-09T14:30:00');
+      expect(response.showHorarios).toBe(true);
+      expect(response.text).toContain('Horarios de Operación - Micros Limache');
+      expect(response.horarios).toBeDefined();
+      expect(response.horarios.status).toBe('EN_SERVICIO');
+      expect(response.text).not.toContain('Disculpa, no alcancé a entender');
+    });
   });
 });
+

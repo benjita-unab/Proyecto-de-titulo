@@ -29,4 +29,32 @@ export class FormatterService {
       options: topRoutes
     };
   }
+
+  formatHorarioResponse(statusResult: any) {
+    let text = `🕐 *Horarios de Operación - Micros Limache*\n\n`;
+
+    if (statusResult.isOutOfService) {
+      text += `⚠️ *Estado:* ${statusResult.badgeText}\n${statusResult.detail}\n\n`;
+    } else {
+      text += `🟢 *Estado:* ${statusResult.badgeText}\n${statusResult.detail}\n\n`;
+    }
+
+    text += `*Itinerario oficial de salidas:*\n`;
+    if (statusResult.horarios && Array.isArray(statusResult.horarios)) {
+      statusResult.horarios.forEach((f: any) => {
+        text += `• *${f.dias}:* ${f.inicio} hrs a ${f.termino} hrs\n`;
+      });
+    }
+
+    return {
+      text,
+      showHorarios: true,
+      horarios: {
+        linea: 'Microbuses Agdabus (Limache - Olmué)',
+        empresa: 'Transporte Público Rural y Urbano',
+        franjas: statusResult.horarios,
+        ...statusResult,
+      },
+    };
+  }
 }
