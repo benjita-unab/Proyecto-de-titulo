@@ -22,10 +22,17 @@ export class ChatController {
       return { text: 'No he recibido ningún texto.' };
     }
 
-    const { intent, destination } = this.nlpService.processQuery(text);
+    const queryResult = this.nlpService.processQuery(text);
+    const { intent, destination } = queryResult;
 
     if (intent === 'Consultar Horario') {
-      const statusResult = this.horariosService.checkHorarioStatus(clientTime);
+      const lineaBuscada = (queryResult as any).linea;
+      const dbHorarios = await this.horariosService.getHorariosPorLinea(lineaBuscada);
+      const statusResult = this.horariosService.checkHorarioStatus(
+        clientTime,
+        dbHorarios.franjas,
+        { linea: dbHorarios.nombreLinea, empresa: dbHorarios.empresa },
+      );
       return this.formatterService.formatHorarioResponse(statusResult);
     }
 

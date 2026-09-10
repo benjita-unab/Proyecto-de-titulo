@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export interface FranjaHoraria {
   dias: string;
@@ -15,10 +17,28 @@ export interface HorarioStatusResult {
   currentTime: string;
   franjaActiva: FranjaHoraria | null;
   horarios: FranjaHoraria[];
+  linea?: string;
+  empresa?: string;
 }
 
 @Injectable()
 export class HorariosService {
+  private supabase: SupabaseClient | null = null;
+  private readonly logger = new Logger(HorariosService.name);
+
+  constructor(@Optional() private configService?: ConfigService) {
+    if (this.configService) {
+      const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+      const supabaseKey =
+        this.configService.get<string>('SUPABASE_KEY') ||
+        this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+
+      if (supabaseUrl && supabaseKey) {
+        this.supabase = createClient(supabaseUrl, supabaseKey);
+      }
+    }
+  }
+
   private readonly defaultHorarios: FranjaHoraria[] = [
     {
       dias: 'Lunes a Viernes',
@@ -45,26 +65,120 @@ export class HorariosService {
   }
 
   /**
-   * Compara la hora dada (o la hora del celular/servidor) con el itinerario para detectar
-   * si el servicio ya terminó o está activo.
+   * Obtiene los horarios desde Supabase para una línea específica o el general.
    */
-  checkHorarioStatus(currentDate?: Date | string): HorarioStatusResult {
+  async getHorariosPorLinea(linea?: string): Promise<{ franjas: FranjaHoraria[]; nombreLinea: string; empresa: string }> {
+    const defaultRes = {
+      franjas: this.defaultHorarios,
+      nombreLinea: 'Microbuses Agdabus (Limache - Olmué)',
+      empresa: 'Transporte Público Rural y Urbano',
+    };
+
+    if (!this.supabase) {
+      return defaultRes;
+    }
+
+    try {
+      let query = this.supabase
+        .from('horario_servicio')
+        .select(`
+          tipo_dia,
+          dias,
+          hora_inicio,
+          hora_termino,
+          id_transporte,
+          medio_transporte (
+            nombre_linea,
+            tipo_transporte,
+            empresa_operadora
+          )
+        `);
+
+      if (linea) {
+        // Formatear búsqueda de línea, por ej. '2' -> 'Línea 02' o '22' -> 'Línea 22'
+        const num = parseInt(linea, 10);
+        const padded = !isNaN(num) ? String(num).padStart(2, '0') : linea;
+        query = query.or(`id_transporte.ilike.%${padded}%,id_transporte.ilike.%${linea}%`);
+      }
+
+      let timeoutId: NodeJS.Timeout;
+      const fetchPromise = query;
+      const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) => {
+        timeoutId = setTimeout(
+          () => resolve({ data: null, error: new Error('Timeout consultando Supabase') }),
+          1500,
+        );
+      });
+
+      const { data, error } = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+      clearTimeout(timeoutId!);
+
+      if (error || !data || data.length === 0) {
+        if (error) this.logger.warn(`Error al consultar horario_servicio: ${error.message}`);
+        return defaultRes;
+      }
+
+      // Mapear franjas
+      const franjasMap = new Map<string, FranjaHoraria>();
+      let detectedLinea = defaultRes.nombreLinea;
+      let detectedEmpresa = defaultRes.empresa;
+
+      for (const row of data as any[]) {
+        if (row.medio_transporte) {
+          const mt = Array.isArray(row.medio_transporte) ? row.medio_transporte[0] : row.medio_transporte;
+          if (mt?.nombre_linea) detectedLinea = `Microbuses ${mt.nombre_linea} (Agdabus)`;
+          if (mt?.empresa_operadora) detectedEmpresa = mt.empresa_operadora;
+        }
+
+        if (!franjasMap.has(row.tipo_dia)) {
+          franjasMap.set(row.tipo_dia, {
+            tipoDia: row.tipo_dia,
+            dias: row.dias,
+            inicio: row.hora_inicio,
+            termino: row.hora_termino,
+          });
+        }
+      }
+
+      const franjas = Array.from(franjasMap.values());
+      return {
+        franjas: franjas.length >= 3 ? franjas : this.defaultHorarios,
+        nombreLinea: detectedLinea,
+        empresa: detectedEmpresa,
+      };
+    } catch (err) {
+      this.logger.error(`Error inesperado al consultar horarios de Supabase: ${err}`);
+      return defaultRes;
+    }
+  }
+
+  /**
+   * Compara la hora dada (o la hora del celular/servidor) con el itinerario para detectar
+   * si el servicio ya terminó o está activo. Permite pasar franjas dinámicas de Supabase.
+   */
+  checkHorarioStatus(
+    currentDate?: Date | string,
+    customFranjas?: FranjaHoraria[],
+    extraInfo?: { linea?: string; empresa?: string },
+  ): HorarioStatusResult {
     const date = currentDate
       ? typeof currentDate === 'string'
         ? new Date(currentDate)
         : currentDate
       : new Date();
 
+    const franjasList = customFranjas && customFranjas.length > 0 ? customFranjas : this.defaultHorarios;
+
     const dayOfWeek = date.getDay(); // 0: Domingo, 1-5: Lunes a Viernes, 6: Sábado
     const currentMinutes = date.getHours() * 60 + date.getMinutes();
 
     let currentFranja: FranjaHoraria | undefined;
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      currentFranja = this.defaultHorarios.find((f) => f.tipoDia === 'semana');
+      currentFranja = franjasList.find((f) => f.tipoDia === 'semana');
     } else if (dayOfWeek === 6) {
-      currentFranja = this.defaultHorarios.find((f) => f.tipoDia === 'sabado');
+      currentFranja = franjasList.find((f) => f.tipoDia === 'sabado');
     } else {
-      currentFranja = this.defaultHorarios.find((f) => f.tipoDia === 'domingo');
+      currentFranja = franjasList.find((f) => f.tipoDia === 'domingo');
     }
 
     const currentTime = `${String(date.getHours()).padStart(2, '0')}:${String(
@@ -79,7 +193,9 @@ export class HorariosService {
         detail: 'Horario habitual de funcionamiento.',
         currentTime,
         franjaActiva: null,
-        horarios: this.defaultHorarios,
+        horarios: franjasList,
+        linea: extraInfo?.linea,
+        empresa: extraInfo?.empresa,
       };
     }
 
@@ -101,7 +217,9 @@ export class HorariosService {
         detail: `La última salida de hoy fue a las ${currentFranja.termino} hrs. La hora actual es ${currentTime} hrs.`,
         currentTime,
         franjaActiva: currentFranja,
-        horarios: this.defaultHorarios,
+        horarios: franjasList,
+        linea: extraInfo?.linea,
+        empresa: extraInfo?.empresa,
       };
     }
 
@@ -113,7 +231,9 @@ export class HorariosService {
         detail: `El servicio inicia hoy a las ${currentFranja.inicio} hrs. La hora actual es ${currentTime} hrs.`,
         currentTime,
         franjaActiva: currentFranja,
-        horarios: this.defaultHorarios,
+        horarios: franjasList,
+        linea: extraInfo?.linea,
+        empresa: extraInfo?.empresa,
       };
     }
 
@@ -124,7 +244,9 @@ export class HorariosService {
       detail: `Operando hoy con normalidad hasta las ${currentFranja.termino} hrs.`,
       currentTime,
       franjaActiva: currentFranja,
-      horarios: this.defaultHorarios,
+      horarios: franjasList,
+      linea: extraInfo?.linea,
+      empresa: extraInfo?.empresa,
     };
   }
 }

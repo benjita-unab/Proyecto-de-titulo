@@ -12,9 +12,14 @@ export class NlpService {
       );
 
     if (isScheduleQuery) {
+      // Verificar si especifica una línea particular (ej. "línea 22", "linea 2", "linea 01", "22")
+      const lineaMatch = text.match(/\b(?:linea|línea|micro)\s*(\d+[a-zA-Z]?)\b/i);
+      const linea = lineaMatch ? lineaMatch[1] : null;
+
       return {
         intent: 'Consultar Horario',
         destination: null,
+        linea,
       };
     }
 
