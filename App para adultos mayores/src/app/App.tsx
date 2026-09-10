@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Mic, MicOff, Bus, Phone } from "lucide-react";
 import { HorariosCard, HorarioTransporteData } from "./components/HorariosCard";
+import { persistirHorariosLocalmente, obtenerHorariosLocales } from "./services/horariosStorage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -125,14 +126,21 @@ export default function App() {
         showHorarios = Boolean(data.showHorarios || isScheduleQuery);
         horariosData = data.horarios;
 
+        // Replicar en el almacenamiento local del teléfono para acceso offline (Tarea 3)
+        if (horariosData) {
+          persistirHorariosLocalmente(horariosData);
+        }
+
         if (isScheduleQuery) {
           botResponseText = "Aquí tiene los horarios de operación de las micros:";
         } else {
           botResponseText = data.text;
         }
       } else if (isScheduleQuery) {
-        botResponseText = "Aquí tiene los horarios de operación de las micros:";
+        // En caso de fallo en respuesta HTTP, consultar desde el almacenamiento local
+        botResponseText = "Aquí tiene los horarios de operación de las micros (modo sin conexión):";
         showHorarios = true;
+        horariosData = obtenerHorariosLocales();
       }
 
       const botMsg: Message = {
@@ -151,10 +159,13 @@ export default function App() {
       console.error("Error fetching bot response:", error);
       let botResponseText = "Lo siento, tuve un problema de conexión. 😌📡";
       let showHorarios = false;
+      let horariosData = undefined;
 
       if (isScheduleQuery) {
-        botResponseText = "Aquí tiene los horarios de operación de las micros:";
+        // Consultar desde el almacenamiento local cuando no hay conexión (Tarea 3)
+        botResponseText = "Aquí tiene los horarios de operación de las micros guardados en su teléfono (sin internet):";
         showHorarios = true;
+        horariosData = obtenerHorariosLocales();
       }
 
       const botMsg: Message = {
@@ -163,6 +174,7 @@ export default function App() {
         text: botResponseText,
         time: nowTime(),
         showHorarios,
+        horariosData,
       };
       setMessages((prev) =>
         [...prev.map((m) => (m.id === userMsg.id ? { ...m, read: true } : m)), botMsg]

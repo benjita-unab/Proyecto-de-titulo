@@ -46,12 +46,15 @@ export class FormatterService {
       });
     }
 
+    const nombreLinea = statusResult.linea || 'Microbuses Agdabus (Limache - Olmué)';
+    const nombreEmpresa = statusResult.empresa || 'Transporte Público Rural y Urbano';
+
     return {
       text,
       showHorarios: true,
       horarios: {
-        linea: 'Microbuses Agdabus (Limache - Olmué)',
-        empresa: 'Transporte Público Rural y Urbano',
+        linea: nombreLinea,
+        empresa: nombreEmpresa,
         franjas: statusResult.horarios,
         ...statusResult,
       },
