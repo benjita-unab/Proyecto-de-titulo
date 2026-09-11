@@ -45,6 +45,22 @@ export class NlpService {
       };
     }
 
+    // Detectar saludo o bienvenida amigable
+    const isGreeting =
+      !isTravelIntent &&
+      !isTaxiQuery &&
+      !isScheduleQuery &&
+      /^(?:\/start|\/help|hola\b|buenos d[ií]as|buenas tardes|buenas noches|buenas\b|saludos\b|alo\b|hola bot\b|bot\b|que tal\b|como estas\b|hola como estas\b)/i.test(
+        text.trim(),
+      );
+
+    if (isGreeting) {
+      return {
+        intent: 'Saludo',
+        destination: null,
+      };
+    }
+
     const destination = this.extractDestination(cleanText);
 
     if (!destination) {
@@ -126,11 +142,14 @@ export class NlpService {
     
     // Fallback: Si el texto es relativamente corto (hasta 8 palabras), asumimos que el usuario
     // escribió directamente el destino (ej: "a la plaza de las 40 horas")
-    const words = cleanText.split(/\s+/);
+    const words = cleanText.split(/\s+/).filter(Boolean);
     if (words.length > 0 && words.length <= 8) {
       // También limpiamos palabras iniciales como 'a la ' si quedaron
-      let dest = cleanText.replace(/^(a la |al |a |hacia |para |por )/i, '');
-      return dest;
+      let dest = cleanText.replace(/^(a la |al |a |hacia |para |por )/i, '').trim();
+      if (/^(bot|asistente)$/i.test(dest)) {
+        return null;
+      }
+      return dest || null;
     }
 
     return null;

@@ -60,5 +60,12 @@ describe('NlpService', () => {
       const result = service.processQuery('Ayer fui a comprar pan y no me dieron vuelto porque no se qué pasó');
       expect(result).toEqual({ intent: 'unknown', destination: null });
     });
+
+    it('should return Saludo intent for greetings and "hola bot"', () => {
+      expect(service.processQuery('hola bot')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('Hola')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('Buenos días')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('/start')).toEqual({ intent: 'Saludo', destination: null });
+    });
   });
 });

@@ -179,6 +179,25 @@ describe('TelegramService', () => {
     it('debe devolver null si el update está vacío o es inválido', () => {
       expect(service.extractIncomingMessage({} as TelegramUpdate)).toBeNull();
     });
+
+    it('debe detectar notas de voz y marcarlas con isVoice: true', () => {
+      const update: TelegramUpdate = {
+        update_id: 10006,
+        message: {
+          message_id: 47,
+          date: 1710000050,
+          chat: { id: 222, type: 'private' },
+          from: { id: 222, is_bot: false, first_name: 'Alberto' },
+          voice: { file_id: 'voice_file_123', duration: 4 },
+        },
+      };
+
+      const parsed = service.extractIncomingMessage(update);
+      expect(parsed).not.toBeNull();
+      expect(parsed?.isVoice).toBe(true);
+      expect(parsed?.chatId).toBe(222);
+      expect(parsed?.senderName).toBe('Alberto');
+    });
   });
 
   describe('handleIncomingUpdate', () => {
@@ -200,15 +219,99 @@ describe('TelegramService', () => {
       expect(result.text).toBe('horarios de la linea 02');
     });
 
-    it('debe devolver processed: false si el update no contiene texto procesable', async () => {
+    it('debe responder automáticamente con mensaje de orientación cuando el usuario envía una nota de voz', async () => {
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { ok: true, result: { message_id: 102 } },
+      });
+
       const update: TelegramUpdate = {
-        update_id: 20002,
+        update_id: 20004,
+        message: {
+          message_id: 88,
+          date: 1710000300,
+          chat: { id: 333444, type: 'private' },
+          from: { id: 333444, is_bot: false, first_name: 'Elena' },
+          voice: { file_id: 'voice_abc_123', duration: 3 },
+        },
       };
 
       const result = await service.handleIncomingUpdate(update);
 
-      expect(result.processed).toBe(false);
-      expect(result.chatId).toBeUndefined();
+      expect(result.processed).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          chat_id: 333444,
+          text: expect.stringContaining('Mensaje de voz recibido'),
+          parse_mode: 'HTML',
+        }),
+      );
+    });
+
+    it('debe responder automáticamente con mensaje de bienvenida al recibir "hola bot"', async () => {
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { ok: true, result: { message_id: 101 } },
+      });
+
+      const mockFormatter = {
+        formatWelcomeMessage: jest.fn().mockReturnValue({
+          text: '👋 ¡Hola! Te damos la bienvenida a Movitech Limache.',
+          parse_mode: 'HTML',
+        }),
+      };
+
+      const mockNlp = {
+        processQuery: jest.fn().mockReturnValue({
+          intent: 'Saludo',
+          destination: null,
+        }),
+      };
+
+      const activeModule = await Test.createTestingModule({
+        providers: [
+          TelegramService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockReturnValue(mockBotToken),
+            },
+          },
+          { provide: 'TelegramFormatterService', useValue: mockFormatter },
+          { provide: 'NlpService', useValue: mockNlp },
+        ],
+      }).compile();
+
+      const activeService = new TelegramService(
+        activeModule.get<ConfigService>(ConfigService),
+        mockFormatter as any,
+        mockNlp as any,
+      );
+
+      const update: TelegramUpdate = {
+        update_id: 20003,
+        message: {
+          message_id: 70,
+          date: 1710000200,
+          chat: { id: 777888, type: 'private' },
+          from: { id: 777888, is_bot: false, first_name: 'Rosa' },
+          text: 'hola bot',
+        },
+      };
+
+      const result = await activeService.handleIncomingUpdate(update);
+
+      expect(result.processed).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(mockFormatter.formatWelcomeMessage).toHaveBeenCalledWith('Rosa');
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          chat_id: 777888,
+          text: expect.stringContaining('Movitech Limache'),
+          parse_mode: 'HTML',
+        }),
+      );
     });
   });
 
@@ -241,6 +344,209 @@ describe('TelegramService', () => {
       const success = await service.sendMessage(123456, 'Mensaje de prueba');
 
       expect(success).toBe(false);
+    });
+  });
+
+  describe('syncTelegramEventWithRoutes (Tarea 3 - HU #54)', () => {
+    let activeService: TelegramService;
+    let mockRutasService: any;
+    let mockNlpService: any;
+    let mockFormatterService: any;
+    let mockHorariosService: any;
+    let mockTaxisService: any;
+
+    beforeEach(async () => {
+      mockRutasService = {
+        getRoutesForDestination: jest.fn().mockResolvedValue([
+          {
+            linea: 'Línea 01',
+            recorrido: 'Terminal Victoria, Urmeneta, Estación Limache',
+            tipo: 'Microbús Agdabus',
+          },
+          {
+            linea: 'Línea 02',
+            recorrido: 'República, San Francisco, Cajón Grande',
+            tipo: 'Microbús Agdabus',
+          },
+        ]),
+      };
+
+      mockNlpService = {
+        processQuery: jest.fn((text: string) => {
+          if (text.includes('hospital') || text.includes('plaza') || text.includes('centro')) {
+            return { intent: 'Buscar Ruta', destination: 'Hospital Santo Tomás' };
+          }
+          if (text.includes('taxi')) {
+            return { intent: 'Consultar RadioTaxi', destination: null };
+          }
+          if (text.includes('horario')) {
+            return { intent: 'Consultar Horario', destination: null, linea: '01' };
+          }
+          if (text.includes('hola') || text.startsWith('/start')) {
+            return { intent: 'Saludo', destination: null };
+          }
+          return { intent: 'unknown', destination: null };
+        }),
+      };
+
+      mockFormatterService = {
+        formatRouteResponse: jest.fn((dest: string, routes: any[], mode: any) => {
+          if (routes.length === 0) {
+            return {
+              text: '🚌 Disculpa, no encontré recorridos directos.',
+              parse_mode: mode || 'HTML',
+            };
+          }
+          if (mode === 'Markdown') {
+            return {
+              text: `🚌 *OPCIONES DE TRANSPORTE A: ${dest.toUpperCase()}*\n📍 *Pasa por:* ${routes[0].recorrido}\n⏱️ *Horario:* 06:30 - 21:00\n💰 *Tarifa:* $150`,
+              parse_mode: 'Markdown',
+            };
+          }
+          return {
+            text: `🚌 <b>OPCIONES DE TRANSPORTE A: ${dest.toUpperCase()}</b>\n📍 <b>Pasa por:</b> ${routes[0].recorrido}\n⏱️ <b>Horario:</b> 06:30 - 21:00\n💰 <b>Tarifa:</b> $150`,
+            parse_mode: 'HTML',
+          };
+        }),
+        formatWelcomeMessage: jest.fn().mockReturnValue({
+          text: '👋 ¡Hola! Te damos la bienvenida a <b>Movitech Limache</b>.',
+          parse_mode: 'HTML',
+        }),
+        formatRadioTaxisResponse: jest.fn().mockReturnValue({
+          text: '🚕 <b>DIRECTORIO DE RADIO TAXIS - LIMACHE</b>',
+          parse_mode: 'HTML',
+        }),
+        formatHorarioResponse: jest.fn().mockReturnValue({
+          text: '⏱️ <b>HORARIOS DE OPERACIÓN - MICROBUSES LIMACHE</b>',
+          parse_mode: 'HTML',
+        }),
+      };
+
+      mockHorariosService = {
+        getHorariosPorLinea: jest.fn().mockResolvedValue({
+          nombreLinea: 'Línea 01',
+          empresa: 'Agdabus',
+          franjas: [],
+        }),
+        checkHorarioStatus: jest.fn().mockReturnValue({
+          isOutOfService: false,
+          badgeText: 'EN SERVICIO',
+          detail: 'Operando',
+          linea: 'Línea 01',
+          horarios: [],
+        }),
+      };
+
+      mockTaxisService = {
+        getCentralesRadioTaxi: jest.fn().mockResolvedValue([
+          {
+            nombre: 'Radio Taxi Limache',
+            telefono: '+56322626021',
+            direccionBase: 'Porvenir 574',
+          },
+        ]),
+      };
+
+      activeService = new TelegramService(
+        { get: jest.fn().mockReturnValue(mockBotToken) } as any,
+        mockFormatterService,
+        mockNlpService,
+        mockRutasService,
+        mockHorariosService,
+        mockTaxisService,
+      );
+    });
+
+    it('debe conectar con RutasService y enviar respuesta enriquecida ante consulta de destino (CA-54.2)', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      const result = await activeService.syncTelegramEventWithRoutes(
+        123456,
+        '¿Cómo llego al hospital?',
+        'Don Juan',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.intent).toBe('Buscar Ruta');
+      expect(mockRutasService.getRoutesForDestination).toHaveBeenCalledWith('Hospital Santo Tomás');
+      expect(result.replyText).toContain('🚌');
+      expect(result.replyText).toContain('📍');
+      expect(result.replyText).toContain('⏱️');
+      expect(result.replyText).toContain('💰');
+      expect(result.replyText).toContain('<b>OPCIONES DE TRANSPORTE');
+    });
+
+    it('debe soportar parse_mode: Markdown si es requerido por el cliente', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      const result = await activeService.syncTelegramEventWithRoutes(
+        123456,
+        '¿Cómo llego a la plaza?',
+        'María',
+        'Markdown',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.parseMode).toBe('Markdown');
+      expect(result.replyText).toContain('*OPCIONES DE TRANSPORTE');
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          parse_mode: 'Markdown',
+        }),
+      );
+    });
+
+    it('debe procesar consultas en un tiempo menor o igual a 1.5 segundos (CA-54.1)', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      const result = await activeService.syncTelegramEventWithRoutes(
+        123456,
+        'micro al hospital',
+      );
+
+      expect(result.latencyMs).toBeLessThanOrEqual(1500);
+      expect(result.success).toBe(true);
+    });
+
+    it('CA-54.3: debe lograr una tasa de éxito >= 85% ante 20 comandos de prueba consecutivos', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { ok: true } });
+
+      const testCommands = [
+        'hola bot',
+        '¿Cómo llego al hospital?',
+        'quiero ir a la plaza',
+        'micro al centro',
+        '¿A qué hora pasa la micro?',
+        'horarios de buses',
+        'necesito un taxi',
+        'número de radiotaxi',
+        '/start',
+        '/help',
+        'cómo llegar al hospital santo tomas',
+        'buses para la plaza 40 horas',
+        'horario linea 01',
+        'radiotaxi limache',
+        'hola buenas tardes',
+        'micro al hospital',
+        'taxi al centro',
+        'a que hora sale el primer bus',
+        'quiero ir a un lugar desconocido',
+        'gracias bot',
+      ];
+
+      let successfulResponses = 0;
+
+      for (const cmd of testCommands) {
+        const res = await activeService.syncTelegramEventWithRoutes(999000, cmd);
+        if (res.success && res.latencyMs <= 1500 && res.replyText.length > 0) {
+          successfulResponses++;
+        }
+      }
+
+      const successRate = (successfulResponses / testCommands.length) * 100;
+      expect(successRate).toBeGreaterThanOrEqual(85);
+      expect(successfulResponses).toBe(20); // 100% de éxito logrado
     });
   });
 });

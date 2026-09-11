@@ -209,4 +209,42 @@ describe('TelegramFormatterService', () => {
       expect(result.text).toContain('¡Hola! Te damos la bienvenida');
     });
   });
+
+  describe('6. Plantilla de Horarios de Operación (formatHorarioResponse)', () => {
+    it('debe formatear estado EN_SERVICIO e itinerario en HTML', () => {
+      const mockStatus = {
+        isOutOfService: false,
+        badgeText: 'EN SERVICIO',
+        detail: 'El servicio se encuentra operando normalmente.',
+        linea: 'Línea 01',
+        horarios: [
+          { dias: 'Lunes a Viernes', inicio: '06:30', termino: '21:00' },
+          { dias: 'Sábados', inicio: '07:00', termino: '20:30' },
+        ],
+      };
+
+      const result = service.formatHorarioResponse(mockStatus);
+
+      expect(result.parse_mode).toBe('HTML');
+      expect(result.text).toContain('⏱️ <b>HORARIOS DE OPERACIÓN');
+      expect(result.text).toContain('🟢 <b>Estado:</b> EN SERVICIO');
+      expect(result.text).toContain('06:30 hrs a 21:00 hrs');
+      expect(result.text).toContain('Línea 01');
+    });
+
+    it('debe advertir cuando el servicio está fuera de horario', () => {
+      const mockStatus = {
+        isOutOfService: true,
+        badgeText: 'FUERA DE SERVICIO',
+        detail: 'El servicio cerró sus salidas.',
+        linea: 'Línea 02',
+        horarios: [],
+      };
+
+      const result = service.formatHorarioResponse(mockStatus);
+
+      expect(result.text).toContain('⚠️ <b>Estado:</b> FUERA DE SERVICIO');
+      expect(result.text).toContain('Línea 02');
+    });
+  });
 });

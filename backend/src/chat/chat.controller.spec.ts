@@ -81,6 +81,13 @@ describe('ChatController', () => {
       expect(response.taxis.length).toBeGreaterThanOrEqual(2);
       expect(response.text).not.toContain('Disculpa, no alcancé a entender');
     });
+
+    it('should return a friendly welcome message when greeting with "hola bot"', async () => {
+      const response = await controller.handleChat('hola bot');
+      expect(response.text).toContain('¡Hola! Te damos la bienvenida a Movitech Limache');
+      expect(response.text).toContain('asistente de movilidad');
+      expect(response.text).not.toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir');
+    });
   });
 });
 
