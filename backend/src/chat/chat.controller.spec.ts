@@ -4,6 +4,7 @@ import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
 import { FormatterService } from '../formatter/formatter.service';
+import { TaxisService } from '../transport/taxis/taxis.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('ChatController', () => {
@@ -25,6 +26,7 @@ describe('ChatController', () => {
         NlpService,
         RutasService,
         HorariosService,
+        TaxisService,
         FormatterService,
         {
           provide: ConfigService,
@@ -67,6 +69,16 @@ describe('ChatController', () => {
       expect(response.text).toContain('Horarios de Operación - Micros Limache');
       expect(response.horarios).toBeDefined();
       expect(response.horarios.status).toBe('EN_SERVICIO');
+      expect(response.text).not.toContain('Disculpa, no alcancé a entender');
+    });
+
+    it('should return radiotaxi contacts and showRadioTaxis flag when asking for radio taxi', async () => {
+      const response = await controller.handleChat('¿Cuáles son los números de radio taxi?');
+      expect(response.showRadioTaxis).toBe(true);
+      expect(response.text).toContain('centrales de Radio Taxi autorizadas en Limache');
+      expect(response.taxis).toBeDefined();
+      expect(Array.isArray(response.taxis)).toBe(true);
+      expect(response.taxis.length).toBeGreaterThanOrEqual(2);
       expect(response.text).not.toContain('Disculpa, no alcancé a entender');
     });
   });

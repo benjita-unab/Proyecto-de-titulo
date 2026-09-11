@@ -110,8 +110,14 @@ export default function App() {
         text
       );
 
+    const isTravelIntent =
+      /(?:como llego|como llegar|como ir|quiero ir|necesito ir|voy a|voy al|micro a|micro al|colectivo a|colectivo al|lleve|pasar por|hacia|para llegar)/i.test(
+        text
+      );
+
     const isTaxiQuery =
-      /taxi|radiotaxi|radio taxi|colectivo|central de taxi|pedir un taxi|llamar a un taxi|numero de taxi|número de taxi/i.test(
+      !isTravelIntent &&
+      /\b(?:taxi|taxis|radiotaxi|radiotaxis|radio taxi|radio taxis|central de taxi|centrales de taxi|pedir un taxi|llamar a un taxi|numero de taxi|número de taxi|numeros de radio taxi|números de radio taxi)\b/i.test(
         text
       );
 

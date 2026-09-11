@@ -5,9 +5,18 @@ export class NlpService {
   processQuery(text: string) {
     const cleanText = this.cleanText(text);
 
-    // Detectar consulta de radio taxi
+    // Detectar si el usuario está pidiendo ruta hacia un destino
+    // Si la frase tiene estructura de viaje (ej. "colectivo a...", "taxi para ir a...", "cómo llego a..."),
+    // debe prevalecer la búsqueda de ruta y no la tarjeta de radiotaxi
+    const isTravelIntent =
+      /(?:como llego|como llegar|como ir|quiero ir|necesito ir|voy a|voy al|micro a|micro al|colectivo a|colectivo al|lleve|pasar por|hacia|para llegar)/i.test(
+        text,
+      );
+
+    // Detectar consulta directa de contactos o servicio de radio taxi (sin destino específico de viaje)
     const isTaxiQuery =
-      /taxi|radiotaxi|radio taxi|colectivo|central de taxi|centrales de taxi|pedir un taxi|llamar a un taxi|numero de taxi|número de taxi|numeros de radio taxi|números de radio taxi/i.test(
+      !isTravelIntent &&
+      /\b(?:taxi|taxis|radiotaxi|radiotaxis|radio taxi|radio taxis|central de taxi|centrales de taxi|pedir un taxi|llamar a un taxi|numero de taxi|número de taxi|numeros de radio taxi|números de radio taxi|telefono de taxi|teléfono de taxi)\b/i.test(
         text,
       );
 

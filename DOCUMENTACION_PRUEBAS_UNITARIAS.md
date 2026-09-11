@@ -3,14 +3,15 @@
 **Proyecto:** Aplicación de Transporte para Adultos Mayores (Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
 **Total de Suites de Pruebas Unitarias:** 7 Suites  
-**Total de Pruebas Unitarias Registradas:** 28 Tests (100% pasando)  
+**Total de Suites de Pruebas Unitarias:** 7 Suites  
+**Total de Pruebas Unitarias Registradas:** 31 Tests (100% pasando)  
 **Pruebas de Integración (E2E):** 2 Suites / 5 Tests (100% pasando)  
 
 ---
 
 ## 1. Mapeo de Pull Requests y Tareas Realizadas
 
-| Pull Request | Tarea / Historia de Usuario | Archivo de Prueba | Tests Asociados |
+| Pull Request / Rama | Tarea / Historia de Usuario | Archivo de Prueba | Tests Asociados |
 | :--- | :--- | :--- | :--- |
 | **PR #3** | Detección de destino y lugar de llegada en el texto del usuario | [`nlp.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.spec.ts) | 7 tests |
 | **PR #4** | Creación de tablas y consulta de rutas por destino en Supabase | [`rutas.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/rutas/rutas.service.spec.ts) | 4 tests |
@@ -19,11 +20,14 @@
 | **PR #8** | Configurar permisos CORS y conexión App-Backend | Configuración global y endpoints del Chat | Verificado en E2E / Controller |
 | **PR #10** | Comparación de horarios dispositivo e itinerario oficial backend | [`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts) | 7 tests |
 | **PR #11** | Creación tabla de horario de servicio e integración con chat | [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 1 test |
-| **Rama Actual** | Diseñar extractor y poblamiento de horarios en Supabase (HU #22) | [`chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/test/chat-horarios.e2e-spec.ts) / `poblar-transporte.ts` | 4 tests E2E |
+| **PR #12** | Diseñar extractor y poblamiento de horarios en Supabase (HU #22) | [`chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/test/chat-horarios.e2e-spec.ts) / `poblar-horarios.ts` | 4 tests E2E |
+| **HU #53 (Tarea 1)** | Diseñar dashboard de radiotaxis con llamada rápida 1 toque | Frontend `RadioTaxisDashboard.tsx` / `App.tsx` | Verificado en interfaz y build Vite |
+| **HU #53 (Tarea 2)** | Estructurar tabla de base de datos `servicio_radiotaxi` | Backend `crear_tabla_radiotaxis.sql` | Verificado con RLS y Supabase |
+| **HU #53 (Tarea 3 / Actual)** | Extractor automático desde TodoRadioTaxi y API en servidor | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
 
 ---
 
-## 2. Detalle Exhaustivo de Pruebas Unitarias (28 Tests)
+## 2. Detalle Exhaustivo de Pruebas Unitarias (31 Tests)
 
 ### Suite 1: Horarios de Servicio ([`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts))
 > **Objetivo:** Verificar la lógica de franjas horarias y comparación con la hora del dispositivo para adultos mayores (HU #22).
@@ -81,9 +85,17 @@
 
 ---
 
-### Suite 6 y 7: Servicios Base ([`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) y [`app.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/app.controller.spec.ts))
+### Suite 6: Servicio de Radiotaxis ([`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts))
+> **Objetivo:** Asegurar la consulta de contactos de radiotaxis desde Supabase y disponibilidad de contingencia (HU #53).
 
-- [x] **`TaxisService > should be defined`**: Servicio de taxis colectivos inicializado.
+- [x] **`TaxisService > should be defined`**: Verificación de instanciación del servicio.
+- [x] **`TaxisService > getCentralesRadioTaxi > debe devolver al menos 2 centrales autorizadas con nombre, telefono y direccion (CA-3.1 y CA-3.3)`**: Comprueba que la lista retorne centrales autorizadas de Limache con sus teléfonos en formato E.164 listos para discado.
+- [x] **`TaxisService > getCentralesRadioTaxi > debe mantener disponibilidad con lista de contingencia si no hay conexion`**: Garantiza la disponibilidad 100% offline ante fallos de conexión (CA-3.4).
+
+---
+
+### Suite 7: Controlador Raíz ([`app.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/app.controller.spec.ts))
+
 - [x] **`AppController > root > should return "Hello World!"`**: Verificación de estado del servidor raíz.
 
 ---
@@ -100,21 +112,83 @@ Ubicación: [`test/chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/
 
 ---
 
-## 4. Comandos de Ejecución de Pruebas
+## 4. Comandos de Ejecución de Pruebas y Scripts
+
+Todos los siguientes comandos deben ejecutarse desde la carpeta `backend/`:
 
 ```powershell
-# Ejecutar todas las pruebas unitarias (28 tests)
+# 1. Ejecutar TODAS las pruebas unitarias (31 tests en 7 suites)
 npm test
 
-# Ejecutar pruebas unitarias en modo detallado
+# 2. Ejecutar pruebas unitarias con reporte detallado de cada test individual
 npx jest --verbose
 
-# Ejecutar las pruebas de integración E2E (5 tests)
+# 3. Ejecutar pruebas unitarias cerrando conexiones abiertas limpiamente
+npx jest --detectOpenHandles --forceExit
+
+# 4. Ejecutar reporte de cobertura de código (Coverage)
+npm test -- --coverage
+
+# 5. Ejecutar pruebas en modo observador (se re-ejecutan automáticamente al guardar cambios)
+npm run test:watch
+```
+
+### Comandos para ejecutar pruebas unitarias suite por suite:
+
+```powershell
+# Suite de Radiotaxis (HU #53)
+npx jest src/transport/taxis/taxis.service.spec.ts --verbose
+
+# Suite del Controlador de Chat (Integración NLP, Rutas, Horarios y Radiotaxis)
+npx jest src/chat/chat.controller.spec.ts --verbose
+
+# Suite de Consulta y Contingencia de Rutas
+npx jest src/transport/rutas/rutas.service.spec.ts --verbose
+
+# Suite de Procesamiento de Lenguaje Natural (NLP)
+npx jest src/nlp/nlp.service.spec.ts --verbose
+
+# Suite de Horarios e Itinerarios (HU #22)
+npx jest src/transport/horarios/horarios.service.spec.ts --verbose
+
+# Suite de Formato y Presentación Accesible
+npx jest src/formatter/formatter.service.spec.ts --verbose
+
+# Suite del Controlador Raíz
+npx jest src/app.controller.spec.ts --verbose
+```
+
+### Pruebas de Integración End-to-End (E2E):
+
+```powershell
+# Ejecutar todas las pruebas E2E contra la API
 npm run test:e2e
 
-# Poblar la base de datos de Supabase con los datos extraídos
+# Ejecutar únicamente la prueba E2E de Chat y Horarios
+npx jest --config ./test/jest-e2e.json test/chat-horarios.e2e-spec.ts
+```
+
+### Scripts de Gestión de Base de Datos (Supabase):
+
+```powershell
+# Poblar / Extraer datos de radiotaxis automáticamente desde la web a Supabase
+npm run db:populate-radiotaxis
+
+# Poblar base de datos con recorridos de microbuses
 npm run db:populate
 
-# Limpiar las tablas en Supabase
+# Poblar horarios de servicio de microbuses
+npm run db:populate-horarios
+
+# Limpiar todas las tablas en Supabase (incluyendo servicio_radiotaxi)
 npm run db:clean
 ```
+
+### Verificación de Compilación en Frontend:
+
+```powershell
+# Desde la carpeta 'App para adultos mayores/'
+cd "..\App para adultos mayores"
+npm run build
+```
+
