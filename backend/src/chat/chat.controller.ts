@@ -2,6 +2,7 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
+import { TaxisService } from '../transport/taxis/taxis.service';
 import { FormatterService } from '../formatter/formatter.service';
 
 @Controller('api/chat')
@@ -10,6 +11,7 @@ export class ChatController {
     private readonly nlpService: NlpService,
     private readonly rutasService: RutasService,
     private readonly horariosService: HorariosService,
+    private readonly taxisService: TaxisService,
     private readonly formatterService: FormatterService,
   ) {}
 
@@ -26,9 +28,11 @@ export class ChatController {
     const { intent, destination } = queryResult;
 
     if (intent === 'Consultar RadioTaxi') {
+      const taxis = await this.taxisService.getCentralesRadioTaxi();
       return {
         text: 'Aquí tiene las centrales de Radio Taxi autorizadas en Limache para llamar con un solo toque:',
         showRadioTaxis: true,
+        taxis,
       };
     }
 

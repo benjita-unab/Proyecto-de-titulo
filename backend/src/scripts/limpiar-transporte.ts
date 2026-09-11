@@ -51,6 +51,19 @@ async function limpiarBaseDeDatos() {
     if (mediosError) throw mediosError;
     console.log('✅ Registros de medio_transporte eliminados.');
 
+    // 4. Eliminar Centrales de Radio Taxi
+    console.log('Eliminando registros de servicio_radiotaxi...');
+    const { error: taxisError } = await supabase
+      .from('servicio_radiotaxi')
+      .delete()
+      .neq('id_radiotaxi', '0');
+
+    if (taxisError) {
+      console.warn('Advertencia al limpiar servicio_radiotaxi:', taxisError.message);
+    } else {
+      console.log('✅ Registros de servicio_radiotaxi eliminados.');
+    }
+
     console.log('\n¡Limpieza finalizada exitosamente! La base de datos está vacía y lista para probar el script de poblamiento.');
   } catch (error) {
     console.error('❌ Error al limpiar la base de datos:', error);
