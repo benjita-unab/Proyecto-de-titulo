@@ -5,6 +5,19 @@ export class NlpService {
   processQuery(text: string) {
     const cleanText = this.cleanText(text);
 
+    // Detectar consulta de radio taxi
+    const isTaxiQuery =
+      /taxi|radiotaxi|radio taxi|colectivo|central de taxi|centrales de taxi|pedir un taxi|llamar a un taxi|numero de taxi|número de taxi|numeros de radio taxi|números de radio taxi/i.test(
+        text,
+      );
+
+    if (isTaxiQuery) {
+      return {
+        intent: 'Consultar RadioTaxi',
+        destination: null,
+      };
+    }
+
     // Detectar consulta de horarios
     const isScheduleQuery =
       /horario|horarios|primera salida|primer bus|ultima salida|última salida|ultimo bus|último bus|a que hora|a qué hora|hasta que hora|hasta qué hora|frecuencia/i.test(

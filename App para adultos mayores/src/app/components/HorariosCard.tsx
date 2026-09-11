@@ -16,10 +16,10 @@ export interface HorarioTransporteData {
   franjas: FranjaHoraria[];
 }
 
-// Datos predeterminados oficiales de microbuses (Agdabus Limache - Olmué)
+// Datos predeterminados oficiales de microbuses (Limache - Olmué)
 export const HORARIOS_DEFAULT_AGDABUS: HorarioTransporteData = {
-  linea: 'Microbuses Agdabus (Limache - Olmué)',
-  empresa: 'Transporte Público Rural y Urbano',
+  linea: 'Servicio de Microbuses en General (Limache)',
+  empresa: 'Transporte Público Urbano y Rural',
   franjas: [
     {
       dias: 'Lunes a Viernes',

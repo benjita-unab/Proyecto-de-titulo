@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Mic, MicOff, Bus, Phone } from "lucide-react";
 import { HorariosCard, HorarioTransporteData } from "./components/HorariosCard";
 import { persistirHorariosLocalmente, obtenerHorariosLocales } from "./services/horariosStorage";
+import { RadioTaxisDashboard, RadioTaxiData, RADIOTAXIS_DEFAULT_LIMACHE } from "./components/RadioTaxisDashboard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,8 @@ interface Message {
   read?: boolean;
   showHorarios?: boolean;
   horariosData?: HorarioTransporteData;
+  showRadioTaxis?: boolean;
+  taxisData?: RadioTaxiData[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -107,6 +110,11 @@ export default function App() {
         text
       );
 
+    const isTaxiQuery =
+      /taxi|radiotaxi|radio taxi|colectivo|central de taxi|pedir un taxi|llamar a un taxi|numero de taxi|número de taxi/i.test(
+        text
+      );
+
     try {
       const response = await fetch('http://localhost:3000/api/chat', {
         method: 'POST',
@@ -120,11 +128,15 @@ export default function App() {
       let botResponseText = "Hubo un error de conexión con el asistente.";
       let showHorarios = false;
       let horariosData = undefined;
+      let showRadioTaxis = false;
+      let taxisData = undefined;
 
       if (response.ok) {
         const data = await response.json();
         showHorarios = Boolean(data.showHorarios || isScheduleQuery);
         horariosData = data.horarios;
+        showRadioTaxis = Boolean(data.showRadioTaxis || isTaxiQuery);
+        taxisData = data.taxis || (showRadioTaxis ? RADIOTAXIS_DEFAULT_LIMACHE : undefined);
 
         // Replicar en el almacenamiento local del teléfono para acceso offline (Tarea 3)
         if (horariosData) {
@@ -133,14 +145,19 @@ export default function App() {
 
         if (isScheduleQuery) {
           botResponseText = "Aquí tiene los horarios de operación de las micros:";
+        } else if (showRadioTaxis) {
+          botResponseText = data.text || "Aquí tiene las centrales de Radio Taxi autorizadas en Limache para llamar con un toque:";
         } else {
           botResponseText = data.text;
         }
       } else if (isScheduleQuery) {
-        // En caso de fallo en respuesta HTTP, consultar desde el almacenamiento local
         botResponseText = "Aquí tiene los horarios de operación de las micros (modo sin conexión):";
         showHorarios = true;
         horariosData = obtenerHorariosLocales();
+      } else if (isTaxiQuery) {
+        botResponseText = "Aquí tiene las centrales de Radio Taxi autorizadas en Limache (disponible sin internet):";
+        showRadioTaxis = true;
+        taxisData = RADIOTAXIS_DEFAULT_LIMACHE;
       }
 
       const botMsg: Message = {
@@ -150,6 +167,8 @@ export default function App() {
         time: nowTime(),
         showHorarios,
         horariosData,
+        showRadioTaxis,
+        taxisData,
       };
 
       setMessages((prev) =>
@@ -160,12 +179,17 @@ export default function App() {
       let botResponseText = "Lo siento, tuve un problema de conexión. 😌📡";
       let showHorarios = false;
       let horariosData = undefined;
+      let showRadioTaxis = false;
+      let taxisData = undefined;
 
       if (isScheduleQuery) {
-        // Consultar desde el almacenamiento local cuando no hay conexión (Tarea 3)
         botResponseText = "Aquí tiene los horarios de operación de las micros guardados en su teléfono (sin internet):";
         showHorarios = true;
         horariosData = obtenerHorariosLocales();
+      } else if (isTaxiQuery) {
+        botResponseText = "Aquí tiene las centrales de Radio Taxi autorizadas en Limache guardadas en su teléfono (sin internet):";
+        showRadioTaxis = true;
+        taxisData = RADIOTAXIS_DEFAULT_LIMACHE;
       }
 
       const botMsg: Message = {
@@ -175,6 +199,8 @@ export default function App() {
         time: nowTime(),
         showHorarios,
         horariosData,
+        showRadioTaxis,
+        taxisData,
       };
       setMessages((prev) =>
         [...prev.map((m) => (m.id === userMsg.id ? { ...m, read: true } : m)), botMsg]
@@ -290,6 +316,12 @@ export default function App() {
               {msg.showHorarios && (
                 <div className="mt-2 w-full">
                   <HorariosCard data={msg.horariosData} />
+                </div>
+              )}
+
+              {msg.showRadioTaxis && (
+                <div className="mt-2 w-full">
+                  <RadioTaxisDashboard taxis={msg.taxisData} />
                 </div>
               )}
 
