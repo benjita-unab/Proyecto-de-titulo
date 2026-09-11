@@ -2,9 +2,8 @@
 
 **Proyecto:** Aplicación de Transporte para Adultos Mayores (Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
-**Total de Suites de Pruebas Unitarias:** 7 Suites  
-**Total de Suites de Pruebas Unitarias:** 7 Suites  
-**Total de Pruebas Unitarias Registradas:** 31 Tests (100% pasando)  
+**Total de Suites de Pruebas Unitarias:** 10 Suites  
+**Total de Pruebas Unitarias Registradas:** 66 Tests (100% pasando)  
 **Pruebas de Integración (E2E):** 2 Suites / 5 Tests (100% pasando)  
 
 ---
@@ -21,9 +20,9 @@
 | **PR #10** | Comparación de horarios dispositivo e itinerario oficial backend | [`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts) | 7 tests |
 | **PR #11** | Creación tabla de horario de servicio e integración con chat | [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 1 test |
 | **PR #12** | Diseñar extractor y poblamiento de horarios en Supabase (HU #22) | [`chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/test/chat-horarios.e2e-spec.ts) / `poblar-horarios.ts` | 4 tests E2E |
-| **HU #53 (Tarea 1)** | Diseñar dashboard de radiotaxis con llamada rápida 1 toque | Frontend `RadioTaxisDashboard.tsx` / `App.tsx` | Verificado en interfaz y build Vite |
-| **HU #53 (Tarea 2)** | Estructurar tabla de base de datos `servicio_radiotaxi` | Backend `crear_tabla_radiotaxis.sql` | Verificado con RLS y Supabase |
-| **HU #53 (Tarea 3 / Actual)** | Extractor automático desde TodoRadioTaxi y API en servidor | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
+| **HU #53 (Tarea 1-3)** | Radiotaxis: Dashboard, tablas y extractor web contingente | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
+| **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 13 tests |
+| **HU #54 (Tarea 2 / Actual)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) / [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 13 tests |
 
 ---
 
@@ -97,6 +96,44 @@
 ### Suite 7: Controlador Raíz ([`app.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/app.controller.spec.ts))
 
 - [x] **`AppController > root > should return "Hello World!"`**: Verificación de estado del servidor raíz.
+
+---
+
+### Suite 8: Formateador Accesible de Telegram ([`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts))
+> **Objetivo:** Garantizar presentación accesible para adultos mayores en Telegram (HTML, emojis, legibilidad visual según HU #54 - Tarea 1).
+
+- [x] **`TelegramFormatterService > should be defined`**: Verificación de instanciación del servicio.
+- [x] **`TelegramFormatterService > sanitizeHtml`**: Sanitiza caracteres reservados HTML (`<`, `>`, `&`).
+- [x] **`TelegramFormatterService > formatRouteResponse`**: Formatea alternativas con negritas, emojis institucionales y enlaces de tránsito.
+- [x] **`TelegramFormatterService > formatHorarioResponse`**: Muestra estado de servicio activo o fuera de horario con franjas detalladas.
+- [x] **`TelegramFormatterService > formatWelcomeMessage`**: Mensaje de bienvenida empático con comandos sugeridos.
+
+---
+
+### Suite 9: Controlador de Webhook de Telegram ([`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts))
+> **Objetivo:** Verificar recepción de webhooks, validación del token de seguridad y respuesta inmediata HTTP 200 (HU #54 - Tarea 2).
+
+- [x] **`TelegramController > should be defined`**: Verificación de inyección de dependencias.
+- [x] **`TelegramController > handleWebhook > debe retornar inmediatamente { status: "ok" } cuando el header de seguridad es válido`**: Valida respuesta HTTP 200 inmediata con header `x-telegram-bot-api-secret-token`.
+- [x] **`TelegramController > handleWebhook > debe retornar { status: "ok" } cuando el token se envía en el query string (?token=...)`**: Valida soporte de token por query parameter.
+- [x] **`TelegramController > handleWebhook > debe lanzar UnauthorizedException si no se envía ningún token de seguridad`**: Rechaza peticiones sin autenticación.
+- [x] **`TelegramController > handleWebhook > debe lanzar UnauthorizedException si el token de seguridad es inválido`**: Rechaza tokens erróneos o manipulados.
+- [x] **`TelegramController > handleWebhook > debe responder { status: "ok" } de inmediato incluso si el procesamiento en segundo plano arroja un error`**: Garantiza resiliencia y evita reintentos masivos de Telegram.
+
+---
+
+### Suite 10: Servicio de Telegram ([`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts))
+> **Objetivo:** Extracción robusta de chat_id y text, validación de secretos y envío de mensajes oficiales (HU #54 - Tarea 2).
+
+- [x] **`TelegramService > should be defined`**: Instanciación del servicio con ConfigService.
+- [x] **`TelegramService > validateSecretToken > debe validar exitosamente con header correcto`**: Coincidencia exacta con `TELEGRAM_WEBHOOK_SECRET`.
+- [x] **`TelegramService > validateSecretToken > debe validar exitosamente con query param correcto`**: Coincidencia por query param.
+- [x] **`TelegramService > validateSecretToken > debe rechazar tokens erróneos o nulos`**: Seguridad ante accesos no autorizados.
+- [x] **`TelegramService > extractIncomingMessage > debe extraer chatId, text y remitente desde un update con message`**: Normalización de datos entrantes.
+- [x] **`TelegramService > extractIncomingMessage > debe extraer datos correctamente desde un edited_message`**: Soporte para mensajes editados.
+- [x] **`TelegramService > extractIncomingMessage > debe recortar espacios en blanco y descartar updates sin texto (stickers/fotos)`**: Filtro de mensajes no textuales.
+- [x] **`TelegramService > handleIncomingUpdate > debe procesar exitosamente devolviendo chatId y text`**: Conexión base lista para el chatbot.
+- [x] **`TelegramService > sendMessage > debe llamar a axios.post con payload correcto y manejar excepciones de red limpiamente`**: Envío seguro de mensajes con modo HTML.
 
 ---
 
