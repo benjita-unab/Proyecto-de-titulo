@@ -13,7 +13,7 @@ export interface TelegramRouteDetail {
 
 export interface TelegramFormattedResponse {
   text: string;
-  parse_mode: 'HTML';
+  parse_mode: 'HTML' | 'Markdown';
 }
 
 @Injectable()
@@ -35,12 +35,17 @@ export class TelegramFormatterService {
    * Diseñada con alta legibilidad para adultos mayores:
    * - Emojis institucionales: 🚌, 📍, ⏱️, 💰, 🗺️
    * - Negritas semánticas
-   * - Espaciado visual generoso
+   * - Soporte tanto para parse_mode 'HTML' como 'Markdown'
    */
   public formatRouteResponse(
     destination: string,
     routes: TelegramRouteDetail[],
+    parseMode: 'HTML' | 'Markdown' = 'HTML',
   ): TelegramFormattedResponse {
+    if (parseMode === 'Markdown') {
+      return this.formatRouteResponseMarkdown(destination, routes);
+    }
+
     if (!destination || !routes || routes.length === 0) {
       const fallbackText =
         `🚌 <b>Movitech Limache - Consulta de Recorridos</b>\n\n` +
@@ -91,6 +96,59 @@ export class TelegramFormatterService {
   }
 
   /**
+   * Versión en formato Markdown de Rutas de Transporte Público
+   */
+  public formatRouteResponseMarkdown(
+    destination: string,
+    routes: TelegramRouteDetail[],
+  ): TelegramFormattedResponse {
+    if (!destination || !routes || routes.length === 0) {
+      const fallbackText =
+        `🚌 *Movitech Limache - Consulta de Recorridos*\n\n` +
+        `Disculpa, no encontré recorridos directos para el destino solicitado.\n\n` +
+        `📍 *Destinos frecuentes sugeridos:*\n` +
+        `• Hospital Santo Tomás\n` +
+        `• Estación Limache (Metro Valparaíso)\n` +
+        `• Plaza de las 40 Horas / Centro\n` +
+        `• Cesfam Limache Viejo\n\n` +
+        `_Escribe el nombre de tu destino para buscar la mejor alternativa._`;
+
+      return {
+        text: fallbackText,
+        parse_mode: 'Markdown',
+      };
+    }
+
+    const topRoutes = routes.slice(0, 4);
+    let message = `🚌 *OPCIONES DE TRANSPORTE A: ${destination.toUpperCase()}*\n`;
+    message += `───────────────────────\n\n`;
+
+    topRoutes.forEach((route, index) => {
+      const lineaSafe = route.linea;
+      const recorridoSafe = route.recorrido;
+      const tipoSafe = route.tipo || 'Microbús Agdabus';
+      const horarioSafe = route.horario || '06:30 - 21:00 hrs';
+      const frecuenciaSafe = route.frecuencia || 'Cada 10-15 min';
+      const tarifaAdulto = route.tarifaAdultoMayor || '$150 (Con pase adulto mayor)';
+      const tarifaGral = route.tarifaGeneral || '$350 - $450';
+
+      message += `*Opción ${index + 1}:* 🚌 *${lineaSafe}* (${tipoSafe})\n`;
+      message += `📍 *Pasa por:* ${recorridoSafe}\n`;
+      message += `⏱️ *Horario y frecuencia:* ${horarioSafe} | ${frecuenciaSafe}\n`;
+      message += `💰 *Tarifa Adulto Mayor:* ${tarifaAdulto} | General: ${tarifaGral}\n\n`;
+    });
+
+    const encodedDest = encodeURIComponent(`${destination} Limache`);
+    message += `🗺️ [Ver ruta completa en Google Maps](https://www.google.com/maps/dir/?api=1&destination=${encodedDest}&travelmode=transit)\n\n`;
+    message += `💡 _Tip Movitech: Recuerda tener a mano tu pase de adulto mayor para acceder a la tarifa rebajada._`;
+
+    return {
+      text: message,
+      parse_mode: 'Markdown',
+    };
+  }
+
+  /**
    * Plantilla 2: Directorio de Radio Taxis Autorizados de Limache
    * Diseñada con botones telefónicos directos y tarifas transparentes.
    * - Emojis institucionales: 🚕, 📍, 📞, ⏱️, 💰, 🛡️
@@ -122,12 +180,13 @@ export class TelegramFormatterService {
 
       message += `<b>${idx + 1}. ${nombreSafe}</b>\n`;
       message += `   📍 <b>Base:</b> ${baseSafe}\n`;
-      message += `   📞 <b>Llamar:</b> <a href="tel:${telClean}">${telFormatSafe}</a> (<code>${telFormatSafe}</code>)\n`;
+      message += `   📞 <b>Llamar:</b> ${telClean}\n`;
+      message += `   📲 <b>Llamada directa:</b> <a href="tel:${telClean}">${telFormatSafe}</a> (<code>${telFormatSafe}</code>)\n`;
       message += `   ⏱️ <b>Atención:</b> ${horarioSafe}\n`;
       message += `   💰 <b>Tarifa estimada:</b> ${tarifaSafe}\n\n`;
     });
 
-    message += `📌 <i>Toca el número o enlace azul para llamar directamente desde tu celular.</i>`;
+    message += `📌 <i>Toca directamente el número <b>+56...</b> para llamar desde tu celular, o el código para copiarlo.</i>`;
 
     return {
       text: message,
@@ -154,4 +213,40 @@ export class TelegramFormatterService {
       parse_mode: 'HTML',
     };
   }
+
+  /**
+   * Plantilla 3: Horarios de Operación y Salidas
+   */
+  public formatHorarioResponse(statusResult: any): TelegramFormattedResponse {
+    let message = `⏱️ <b>HORARIOS DE OPERACIÓN - MICROBUSES LIMACHE</b>\n`;
+    message += `───────────────────────\n\n`;
+
+    if (statusResult.isOutOfService) {
+      message += `⚠️ <b>Estado:</b> ${this.escapeHtml(statusResult.badgeText || 'FUERA DE SERVICIO')}\n`;
+      if (statusResult.detail) {
+        message += `${this.escapeHtml(statusResult.detail)}\n\n`;
+      }
+    } else {
+      message += `🟢 <b>Estado:</b> ${this.escapeHtml(statusResult.badgeText || 'EN SERVICIO')}\n`;
+      if (statusResult.detail) {
+        message += `${this.escapeHtml(statusResult.detail)}\n\n`;
+      }
+    }
+
+    message += `📋 <b>Itinerario oficial de salidas:</b>\n`;
+    if (statusResult.horarios && Array.isArray(statusResult.horarios)) {
+      statusResult.horarios.forEach((f: any) => {
+        message += `• <b>${this.escapeHtml(f.dias)}:</b> ${this.escapeHtml(f.inicio)} hrs a ${this.escapeHtml(f.termino)} hrs\n`;
+      });
+    }
+
+    const nombreLinea = statusResult.linea || 'Microbuses Agdabus (Limache - Olmué)';
+    message += `\n🚌 <i>Servicio: ${this.escapeHtml(nombreLinea)}</i>`;
+
+    return {
+      text: message,
+      parse_mode: 'HTML',
+    };
+  }
 }
+

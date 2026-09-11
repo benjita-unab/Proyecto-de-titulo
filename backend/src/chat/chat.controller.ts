@@ -27,6 +27,12 @@ export class ChatController {
     const queryResult = this.nlpService.processQuery(text);
     const { intent, destination } = queryResult;
 
+    if (intent === 'Saludo') {
+      return {
+        text: '¡Hola! Te damos la bienvenida a Movitech Limache. Soy tu asistente de movilidad para acompañarte en tus viajes en la comuna. ¿En qué te puedo ayudar hoy? Puedes preguntarme cómo llegar a algún lugar (ej: Hospital o Plaza), consultar horarios de microbuses o pedir el contacto de radiotaxis.',
+      };
+    }
+
     if (intent === 'Consultar RadioTaxi') {
       const taxis = await this.taxisService.getCentralesRadioTaxi();
       return {

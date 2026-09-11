@@ -16,6 +16,14 @@ export class TelegramChatDto {
   last_name?: string;
 }
 
+export class TelegramVoiceDto {
+  file_id: string;
+  file_unique_id?: string;
+  duration?: number;
+  mime_type?: string;
+  file_size?: number;
+}
+
 export class TelegramMessageDto {
   message_id: number;
   from?: TelegramUserDto;
@@ -23,6 +31,8 @@ export class TelegramMessageDto {
   date: number;
   text?: string;
   caption?: string;
+  voice?: TelegramVoiceDto;
+  audio?: TelegramVoiceDto;
 }
 
 export class TelegramUpdateDto {
@@ -40,6 +50,7 @@ export interface ParsedTelegramMessage {
   senderName: string;
   username?: string;
   date: number;
+  isVoice?: boolean;
 }
 
 export class TelegramWebhookResponseDto {

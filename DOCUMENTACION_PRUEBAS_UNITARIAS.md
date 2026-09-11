@@ -3,7 +3,7 @@
 **Proyecto:** Aplicación de Transporte para Adultos Mayores (Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
 **Total de Suites de Pruebas Unitarias:** 10 Suites  
-**Total de Pruebas Unitarias Registradas:** 66 Tests (100% pasando)  
+**Total de Pruebas Unitarias Registradas:** 76 Tests (100% pasando)  
 **Pruebas de Integración (E2E):** 2 Suites / 5 Tests (100% pasando)  
 
 ---
@@ -12,21 +12,22 @@
 
 | Pull Request / Rama | Tarea / Historia de Usuario | Archivo de Prueba | Tests Asociados |
 | :--- | :--- | :--- | :--- |
-| **PR #3** | Detección de destino y lugar de llegada en el texto del usuario | [`nlp.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.spec.ts) | 7 tests |
+| **PR #3** | Detección de destino y lugar de llegada en el texto del usuario | [`nlp.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.spec.ts) | 8 tests |
 | **PR #4** | Creación de tablas y consulta de rutas por destino en Supabase | [`rutas.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/rutas/rutas.service.spec.ts) | 4 tests |
 | **PR #6** | Programar formato de respuesta de opciones de transporte | [`formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/formatter.service.spec.ts) | 4 tests |
 | **PR #7** | Gestión de respuestas sobre destinos no reconocidos (fallback conversacional) | [`formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/formatter.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 2 tests |
 | **PR #8** | Configurar permisos CORS y conexión App-Backend | Configuración global y endpoints del Chat | Verificado en E2E / Controller |
 | **PR #10** | Comparación de horarios dispositivo e itinerario oficial backend | [`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts) | 7 tests |
-| **PR #11** | Creación tabla de horario de servicio e integración con chat | [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 1 test |
+| **PR #11** | Creación tabla de horario de servicio e integración con chat | [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 2 tests |
 | **PR #12** | Diseñar extractor y poblamiento de horarios en Supabase (HU #22) | [`chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/test/chat-horarios.e2e-spec.ts) / `poblar-horarios.ts` | 4 tests E2E |
 | **HU #53 (Tarea 1-3)** | Radiotaxis: Dashboard, tablas y extractor web contingente | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
-| **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 13 tests |
-| **HU #54 (Tarea 2 / Actual)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) / [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 13 tests |
+| **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 15 tests |
+| **HU #54 (Tarea 2)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) | 5 tests |
+| **HU #54 (Tarea 3 / Actual)** | Sincronización eventos bot con Rutas y Supabase (CA-54.1, CA-54.2, CA-54.3) | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 14 tests |
 
 ---
 
-## 2. Detalle Exhaustivo de Pruebas Unitarias (31 Tests)
+## 2. Detalle Exhaustivo de Pruebas Unitarias (76 Tests)
 
 ### Suite 1: Horarios de Servicio ([`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts))
 > **Objetivo:** Verificar la lógica de franjas horarias y comparación con la hora del dispositivo para adultos mayores (HU #22).
@@ -48,6 +49,7 @@
 - [x] **`ChatController > handleChat > should return routes for a known destination`**: Ante la consulta "cómo llego a la plaza", orquesta la respuesta estructurada de rutas disponibles.
 - [x] **`ChatController > handleChat > should return a guided message for an unknown destination`**: Si no se reconoce el destino, retorna el mensaje empático y accesible para adultos mayores.
 - [x] **`ChatController > handleChat > should return schedule information and showHorarios flag when asking for horarios`**: Ante preguntas de horarios ("¿Cuáles son los horarios de los buses?"), activa la bandera `showHorarios: true` y entrega el bloque de estado e itinerario.
+- [x] **`ChatController > handleChat > should return a friendly welcome message when greeting with "hola bot"`**: Responde con un saludo amigable y orientativo ante saludos o llamadas al bot.
 
 ---
 
@@ -71,6 +73,7 @@
 - [x] **`NlpService > extractDestination > should return null for very long phrases with unknown intent`**: Evita falsos positivos en relatos largos no relacionados.
 - [x] **`NlpService > processQuery > should return Buscar Ruta intent and destination if regex matches`**: Clasificación como `Buscar Ruta`.
 - [x] **`NlpService > processQuery > should return unknown intent if text is too long and has no pattern`**: Clasificación como `unknown`.
+- [x] **`NlpService > processQuery > should return Saludo intent for greetings and "hola bot"`**: Clasificación como `Saludo` ante saludos y llamados al bot sin destino de viaje.
 
 ---
 
@@ -105,7 +108,7 @@
 - [x] **`TelegramFormatterService > should be defined`**: Verificación de instanciación del servicio.
 - [x] **`TelegramFormatterService > sanitizeHtml`**: Sanitiza caracteres reservados HTML (`<`, `>`, `&`).
 - [x] **`TelegramFormatterService > formatRouteResponse`**: Formatea alternativas con negritas, emojis institucionales y enlaces de tránsito.
-- [x] **`TelegramFormatterService > formatHorarioResponse`**: Muestra estado de servicio activo o fuera de horario con franjas detalladas.
+- [x] **`TelegramFormatterService > formatHorarioResponse`**: Muestra estado de servicio activo o fuera de horario con franjas detalladas e itinerario oficial en HTML.
 - [x] **`TelegramFormatterService > formatWelcomeMessage`**: Mensaje de bienvenida empático con comandos sugeridos.
 
 ---
@@ -133,7 +136,11 @@
 - [x] **`TelegramService > extractIncomingMessage > debe extraer datos correctamente desde un edited_message`**: Soporte para mensajes editados.
 - [x] **`TelegramService > extractIncomingMessage > debe recortar espacios en blanco y descartar updates sin texto (stickers/fotos)`**: Filtro de mensajes no textuales.
 - [x] **`TelegramService > handleIncomingUpdate > debe procesar exitosamente devolviendo chatId y text`**: Conexión base lista para el chatbot.
-- [x] **`TelegramService > sendMessage > debe llamar a axios.post con payload correcto y manejar excepciones de red limpiamente`**: Envío seguro de mensajes con modo HTML.
+- [x] **`TelegramService > syncTelegramEventWithRoutes > debe conectar con RutasService y enviar respuesta enriquecida ante consulta de destino (CA-54.2)`**: Consulta destinos como "Hospital Santo Tomás", recupera rutas de Supabase/contingencia y las formatea con emojis (🚌, 📍, ⏱️, 💰) y negritas.
+- [x] **`TelegramService > syncTelegramEventWithRoutes > debe soportar parse_mode: Markdown si es requerido por el cliente`**: Valida respuesta compatible con `parse_mode: 'Markdown'`.
+- [x] **`TelegramService > syncTelegramEventWithRoutes > debe procesar consultas en un tiempo menor o igual a 1.5 segundos (CA-54.1)`**: Cumplimiento estricto del criterio de tiempo de respuesta <= 1500 ms.
+- [x] **`TelegramService > syncTelegramEventWithRoutes > CA-54.3: debe lograr una tasa de éxito >= 85% ante 20 comandos de prueba consecutivos`**: Validación de resiliencia y precisión con 20 comandos variados consecutivos logrando el 100% de éxito.
+- [x] **`TelegramService > sendMessage > debe llamar a axios.post con payload correcto y manejar excepciones de red limpiamente`**: Envío seguro de mensajes con modo HTML o Markdown.
 
 ---
 
