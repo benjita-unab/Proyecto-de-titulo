@@ -54,13 +54,13 @@ export class NlpService {
     // Expresiones regulares para detectar la intención y extraer el destino
     // El .* antes de la preposición permite palabras intermedias.
     const patterns = [
-      /como llego .*a (.*)/,
-      /como llegar .*a (.*)/,
-      /como ir .*a (.*)/,
-      /quiero ir .*a (.*)/,
-      /quiero llegar .*a (.*)/,
-      /necesito llegar .*a (.*)/,
-      /necesito ir .*a (.*)/,
+      /como llego .*(?:a|al) (.*)/,
+      /como llegar .*(?:a|al) (.*)/,
+      /como ir .*(?:a|al) (.*)/,
+      /quiero ir .*(?:a|al) (.*)/,
+      /quiero llegar .*(?:a|al) (.*)/,
+      /necesito llegar .*(?:a|al) (.*)/,
+      /necesito ir .*(?:a|al) (.*)/,
       /pase .*por (.*)/,
       /pasar .*por (.*)/,
       /pasando por (.*)/,

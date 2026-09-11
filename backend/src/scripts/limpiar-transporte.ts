@@ -18,7 +18,20 @@ async function limpiarBaseDeDatos() {
   console.log('Iniciando script de limpieza de datos de transporte...');
 
   try {
-    // 1. Eliminar Recorridos de Transporte primero (por la llave foránea)
+    // 1. Eliminar Horarios de Servicio primero (por la llave foránea con medio_transporte)
+    console.log('Eliminando registros de horario_servicio...');
+    const { error: horariosError } = await supabase
+      .from('horario_servicio')
+      .delete()
+      .neq('id_horario', '0');
+
+    if (horariosError) {
+      console.warn('Advertencia al limpiar horario_servicio:', horariosError.message);
+    } else {
+      console.log('✅ Registros de horario_servicio eliminados.');
+    }
+
+    // 2. Eliminar Recorridos de Transporte (por la llave foránea con medio_transporte)
     console.log('Eliminando registros de recorrido_transporte...');
     const { error: recorridosError } = await supabase
       .from('recorrido_transporte')
@@ -28,7 +41,7 @@ async function limpiarBaseDeDatos() {
     if (recorridosError) throw recorridosError;
     console.log('✅ Registros de recorrido_transporte eliminados.');
 
-    // 2. Eliminar Medios de Transporte
+    // 3. Eliminar Medios de Transporte
     console.log('Eliminando registros de medio_transporte...');
     const { error: mediosError } = await supabase
       .from('medio_transporte')
