@@ -70,8 +70,8 @@ export class HorariosService {
   async getHorariosPorLinea(linea?: string): Promise<{ franjas: FranjaHoraria[]; nombreLinea: string; empresa: string }> {
     const defaultRes = {
       franjas: this.defaultHorarios,
-      nombreLinea: 'Microbuses Agdabus (Limache - Olmué)',
-      empresa: 'Transporte Público Rural y Urbano',
+      nombreLinea: linea ? 'Microbuses Agdabus (Limache - Olmué)' : 'Servicio de Microbuses en General (Limache)',
+      empresa: linea ? 'Transporte Público Rural y Urbano' : 'Transporte Público Urbano y Rural',
     };
 
     if (!this.supabase) {
@@ -120,11 +120,11 @@ export class HorariosService {
 
       // Mapear franjas
       const franjasMap = new Map<string, FranjaHoraria>();
-      let detectedLinea = defaultRes.nombreLinea;
-      let detectedEmpresa = defaultRes.empresa;
+      let detectedLinea = linea ? defaultRes.nombreLinea : 'Servicio de Microbuses en General (Limache)';
+      let detectedEmpresa = linea ? defaultRes.empresa : 'Transporte Público Urbano y Rural';
 
       for (const row of data as any[]) {
-        if (row.medio_transporte) {
+        if (linea && row.medio_transporte) {
           const mt = Array.isArray(row.medio_transporte) ? row.medio_transporte[0] : row.medio_transporte;
           if (mt?.nombre_linea) detectedLinea = `Microbuses ${mt.nombre_linea} (Agdabus)`;
           if (mt?.empresa_operadora) detectedEmpresa = mt.empresa_operadora;

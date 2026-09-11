@@ -25,6 +25,13 @@ export class ChatController {
     const queryResult = this.nlpService.processQuery(text);
     const { intent, destination } = queryResult;
 
+    if (intent === 'Consultar RadioTaxi') {
+      return {
+        text: 'Aquí tiene las centrales de Radio Taxi autorizadas en Limache para llamar con un solo toque:',
+        showRadioTaxis: true,
+      };
+    }
+
     if (intent === 'Consultar Horario') {
       const lineaBuscada = (queryResult as any).linea;
       const dbHorarios = await this.horariosService.getHorariosPorLinea(lineaBuscada);
