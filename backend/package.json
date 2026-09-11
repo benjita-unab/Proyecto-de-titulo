@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:populate": "ts-node --transpile-only src/scripts/poblar-transporte.ts",
     "db:populate-horarios": "ts-node --transpile-only src/scripts/poblar-horarios.ts",
+    "db:populate-radiotaxis": "ts-node --transpile-only src/scripts/poblar-radiotaxis.ts",
     "db:clean": "ts-node --transpile-only src/scripts/limpiar-transporte.ts"
   },
   "dependencies": {
