@@ -65,7 +65,13 @@ describe('NlpService', () => {
       expect(service.processQuery('hola bot')).toEqual({ intent: 'Saludo', destination: null });
       expect(service.processQuery('Hola')).toEqual({ intent: 'Saludo', destination: null });
       expect(service.processQuery('Buenos días')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('buen día')).toEqual({ intent: 'Saludo', destination: null });
       expect(service.processQuery('/start')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('hola como estan')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('¿hola como estan?')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('¿cómo están?')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('como estan')).toEqual({ intent: 'Saludo', destination: null });
+      expect(service.processQuery('Hola, ¿cómo están?')).toEqual({ intent: 'Saludo', destination: null });
     });
   });
 });

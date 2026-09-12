@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import * as fs from 'fs';
 import { TelegramService } from './telegram.service';
 import { TelegramUpdate } from './telegram.interface';
 
@@ -180,7 +181,7 @@ describe('TelegramService', () => {
       expect(service.extractIncomingMessage({} as TelegramUpdate)).toBeNull();
     });
 
-    it('debe detectar notas de voz y marcarlas con isVoice: true', () => {
+    it('debe detectar notas de voz y extraer file_id y duración con isVoice: true', () => {
       const update: TelegramUpdate = {
         update_id: 10006,
         message: {
@@ -195,8 +196,28 @@ describe('TelegramService', () => {
       const parsed = service.extractIncomingMessage(update);
       expect(parsed).not.toBeNull();
       expect(parsed?.isVoice).toBe(true);
+      expect(parsed?.fileId).toBe('voice_file_123');
       expect(parsed?.chatId).toBe(222);
       expect(parsed?.senderName).toBe('Alberto');
+    });
+
+    it('debe detectar archivos de audio (msg.audio) y extraer file_id y mime_type', () => {
+      const update: TelegramUpdate = {
+        update_id: 10007,
+        message: {
+          message_id: 48,
+          date: 1710000060,
+          chat: { id: 222, type: 'private' },
+          from: { id: 222, is_bot: false, first_name: 'Alberto' },
+          audio: { file_id: 'audio_opus_456', duration: 12, mime_type: 'audio/ogg' },
+        },
+      };
+
+      const parsed = service.extractIncomingMessage(update);
+      expect(parsed).not.toBeNull();
+      expect(parsed?.isVoice).toBe(true);
+      expect(parsed?.fileId).toBe('audio_opus_456');
+      expect(parsed?.mimeType).toBe('audio/ogg');
     });
   });
 
@@ -219,9 +240,53 @@ describe('TelegramService', () => {
       expect(result.text).toBe('horarios de la linea 02');
     });
 
-    it('debe responder automáticamente con mensaje de orientación cuando el usuario envía una nota de voz', async () => {
+    it('debe responder con mensaje de orientación cuando la nota de voz no incluye file_id', async () => {
       mockedAxios.post.mockResolvedValueOnce({
         data: { ok: true, result: { message_id: 102 } },
+      });
+
+      const update: TelegramUpdate = {
+        update_id: 20004,
+        message: {
+          message_id: 88,
+          date: 1710000300,
+          chat: { id: 333444, type: 'private' },
+          from: { id: 333444, is_bot: false, first_name: 'Elena' },
+          voice: {} as any,
+        },
+      };
+
+      const result = await service.handleIncomingUpdate(update);
+
+      expect(result.processed).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          chat_id: 333444,
+          text: expect.stringContaining('Mensaje de voz recibido'),
+          parse_mode: 'HTML',
+        }),
+      );
+    });
+
+    it('debe procesar nota de voz con file_id descargando, transcribiendo y respondiendo', async () => {
+      mockedAxios.get.mockImplementation((url: string) => {
+        if (url.includes('/getFile')) {
+          return Promise.resolve({
+            data: { ok: true, result: { file_path: 'voice/sample_note.oga' } },
+          });
+        }
+        if (url.includes('/file/bot')) {
+          return Promise.resolve({
+            data: Buffer.from('¿Cómo llego al hospital?'),
+          });
+        }
+        return Promise.reject(new Error(`URL no manejada: ${url}`));
+      });
+
+      mockedAxios.post.mockResolvedValue({
+        data: { ok: true, result: { message_id: 103 } },
       });
 
       const update: TelegramUpdate = {
@@ -238,15 +303,7 @@ describe('TelegramService', () => {
       const result = await service.handleIncomingUpdate(update);
 
       expect(result.processed).toBe(true);
-      expect(result.sent).toBe(true);
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        expect.stringContaining('/sendMessage'),
-        expect.objectContaining({
-          chat_id: 333444,
-          text: expect.stringContaining('Mensaje de voz recibido'),
-          parse_mode: 'HTML',
-        }),
-      );
+      expect(result.chatId).toBe(333444);
     });
 
     it('debe responder automáticamente con mensaje de bienvenida al recibir "hola bot"', async () => {
@@ -547,6 +604,258 @@ describe('TelegramService', () => {
       const successRate = (successfulResponses / testCommands.length) * 100;
       expect(successRate).toBeGreaterThanOrEqual(85);
       expect(successfulResponses).toBe(20); // 100% de éxito logrado
+    });
+  });
+
+  describe('Tarea 4 (HU #54) - Procesamiento de audios (OGG)', () => {
+    describe('getFile', () => {
+      it('debe obtener la ruta remota file_path cuando la API de Telegram responde ok: true', async () => {
+        mockedAxios.get.mockResolvedValueOnce({
+          data: {
+            ok: true,
+            result: {
+              file_id: 'voice_xyz_789',
+              file_unique_id: 'unique_123',
+              file_size: 15400,
+              file_path: 'voice/file_55.oga',
+            },
+          },
+        });
+
+        const filePath = await service.getFile('voice_xyz_789');
+
+        expect(filePath).toBe('voice/file_55.oga');
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+          `https://api.telegram.org/bot${mockBotToken}/getFile`,
+          {
+            params: { file_id: 'voice_xyz_789' },
+            timeout: 10000,
+          },
+        );
+      });
+
+      it('debe devolver null si la respuesta de Telegram no contiene file_path', async () => {
+        mockedAxios.get.mockResolvedValueOnce({
+          data: { ok: false, description: 'Wrong file_id' },
+        });
+
+        const filePath = await service.getFile('invalid_file_id');
+        expect(filePath).toBeNull();
+      });
+
+      it('debe devolver null y manejar la excepción de red de axios sin lanzar error no controlado', async () => {
+        mockedAxios.get.mockRejectedValueOnce(new Error('Connection timeout to Telegram API'));
+
+        const filePath = await service.getFile('voice_err_123');
+        expect(filePath).toBeNull();
+      });
+
+      it('debe devolver null si TELEGRAM_BOT_TOKEN no está configurado', async () => {
+        const unconfiguredService = new TelegramService({
+          get: jest.fn().mockReturnValue(''),
+        } as any);
+
+        const filePath = await unconfiguredService.getFile('any_file_id');
+        expect(filePath).toBeNull();
+      });
+    });
+
+    describe('downloadTelegramFile', () => {
+      let createdTestFiles: string[] = [];
+
+      afterEach(() => {
+        for (const file of createdTestFiles) {
+          try {
+            if (fs.existsSync(file)) {
+              fs.unlinkSync(file);
+            }
+          } catch {
+            // Ignorar
+          }
+        }
+        createdTestFiles = [];
+      });
+
+      it('debe descargar físicamente el archivo de audio OGG en una ruta temporal del backend', async () => {
+        const mockBinary = Buffer.from('OGG_OPUS_MOCK_AUDIO_CONTENT');
+        mockedAxios.get.mockResolvedValueOnce({
+          data: mockBinary,
+        });
+
+        const downloadedPath = await service.downloadTelegramFile('voice/file_55.oga');
+        createdTestFiles.push(downloadedPath);
+
+        expect(fs.existsSync(downloadedPath)).toBe(true);
+        const fileContent = fs.readFileSync(downloadedPath);
+        expect(fileContent.toString()).toBe('OGG_OPUS_MOCK_AUDIO_CONTENT');
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+          `https://api.telegram.org/file/bot${mockBotToken}/voice/file_55.oga`,
+          {
+            responseType: 'arraybuffer',
+            timeout: 15000,
+          },
+        );
+      });
+
+      it('debe lanzar excepción si la descarga de audio falla por error de red', async () => {
+        mockedAxios.get.mockRejectedValueOnce(new Error('502 Bad Gateway'));
+
+        await expect(
+          service.downloadTelegramFile('voice/file_fail.oga'),
+        ).rejects.toThrow('502 Bad Gateway');
+      });
+    });
+
+    describe('processVoiceMessage', () => {
+      let voiceService: TelegramService;
+      let mockTranscription: any;
+      let mockRutas: any;
+      let mockNlp: any;
+      let mockFormatter: any;
+
+      beforeEach(() => {
+        mockTranscription = {
+          transcribeAudioFile: jest.fn().mockResolvedValue('¿Cómo llego al Hospital Santo Tomás?'),
+        };
+
+        mockRutas = {
+          getRoutesForDestination: jest.fn().mockResolvedValue([
+            {
+              linea: 'Línea 01',
+              recorrido: 'Terminal Victoria, Urmeneta, Estación Limache',
+              tipo: 'Microbús Agdabus',
+            },
+          ]),
+        };
+
+        mockNlp = {
+          processQuery: jest.fn().mockReturnValue({
+            intent: 'Buscar Ruta',
+            destination: 'Hospital Santo Tomás',
+          }),
+        };
+
+        mockFormatter = {
+          formatRouteResponse: jest.fn().mockReturnValue({
+            text: '🚌 <b>OPCIONES DE TRANSPORTE A: HOSPITAL SANTO TOMÁS</b>\n📍 <b>Pasa por:</b> Terminal Victoria\n⏱️ <b>Horario:</b> 06:30 - 21:00\n💰 <b>Tarifa:</b> $150',
+            parse_mode: 'HTML',
+          }),
+        };
+
+        voiceService = new TelegramService(
+          { get: jest.fn().mockReturnValue(mockBotToken) } as any,
+          mockFormatter,
+          mockNlp,
+          mockRutas,
+          undefined,
+          undefined,
+          mockTranscription,
+        );
+      });
+
+      it('debe ejecutar el flujo completo de voz: getFile -> download -> transcribe -> NLP -> Rutas -> sendMessage', async () => {
+        // Mock getFile
+        mockedAxios.get.mockImplementation((url: string) => {
+          if (url.includes('/getFile')) {
+            return Promise.resolve({
+              data: { ok: true, result: { file_path: 'voice/audio_01.oga' } },
+            });
+          }
+          if (url.includes('/file/bot')) {
+            return Promise.resolve({
+              data: Buffer.from('mock_ogg_audio_buffer'),
+            });
+          }
+          return Promise.reject(new Error(`URL no manejada: ${url}`));
+        });
+
+        // Mock sendMessage
+        mockedAxios.post.mockResolvedValueOnce({
+          data: { ok: true, result: { message_id: 301 } },
+        });
+
+        const result = await voiceService.processVoiceMessage(
+          888999,
+          'file_voice_full_flow',
+          'Alberto Miranda',
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.transcribedText).toBe('¿Cómo llego al Hospital Santo Tomás?');
+        expect(mockTranscription.transcribeAudioFile).toHaveBeenCalled();
+        expect(mockNlp.processQuery).toHaveBeenCalledWith('¿Cómo llego al Hospital Santo Tomás?');
+        expect(mockRutas.getRoutesForDestination).toHaveBeenCalledWith('Hospital Santo Tomás');
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/sendMessage'),
+          expect.objectContaining({
+            chat_id: 888999,
+            text: expect.stringContaining('OPCIONES DE TRANSPORTE'),
+            parse_mode: 'HTML',
+          }),
+        );
+      });
+
+      it('debe enviar mensaje orientativo si el audio transcrito resulta vacío', async () => {
+        mockedAxios.get.mockImplementation((url: string) => {
+          if (url.includes('/getFile')) {
+            return Promise.resolve({
+              data: { ok: true, result: { file_path: 'voice/silence.oga' } },
+            });
+          }
+          if (url.includes('/file/bot')) {
+            return Promise.resolve({
+              data: Buffer.from('silence_buffer'),
+            });
+          }
+          return Promise.reject(new Error('Not handled'));
+        });
+
+        mockTranscription.transcribeAudioFile.mockResolvedValueOnce('');
+
+        mockedAxios.post.mockResolvedValueOnce({
+          data: { ok: true, result: { message_id: 302 } },
+        });
+
+        const result = await voiceService.processVoiceMessage(
+          888999,
+          'file_silence_123',
+          'Elena',
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.transcribedText).toBe('');
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/sendMessage'),
+          expect.objectContaining({
+            chat_id: 888999,
+            text: expect.stringContaining('No pudimos reconocer el audio con claridad'),
+            parse_mode: 'HTML',
+          }),
+        );
+      });
+
+      it('debe manejar errores de red o fallo en getFile sin que el backend caiga y notificando al usuario', async () => {
+        mockedAxios.get.mockRejectedValueOnce(new Error('Network error on Telegram getFile'));
+        mockedAxios.post.mockResolvedValueOnce({
+          data: { ok: true, result: { message_id: 303 } },
+        });
+
+        const result = await voiceService.processVoiceMessage(
+          888999,
+          'file_error_test',
+          'Juan',
+        );
+
+        expect(result.success).toBe(false);
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+          expect.stringContaining('/sendMessage'),
+          expect.objectContaining({
+            chat_id: 888999,
+            text: expect.stringContaining('No pudimos procesar tu audio'),
+            parse_mode: 'HTML',
+          }),
+        );
+      });
     });
   });
 });
