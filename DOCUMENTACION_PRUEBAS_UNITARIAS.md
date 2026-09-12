@@ -2,8 +2,8 @@
 
 **Proyecto:** Aplicación de Transporte para Adultos Mayores (Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
-**Total de Suites de Pruebas Unitarias:** 10 Suites  
-**Total de Pruebas Unitarias Registradas:** 76 Tests (100% pasando)  
+**Total de Suites de Pruebas Unitarias:** 11 Suites  
+**Total de Pruebas Unitarias Registradas:** 94 Tests (100% pasando)  
 **Pruebas de Integración (E2E):** 2 Suites / 5 Tests (100% pasando)  
 
 ---
@@ -23,7 +23,8 @@
 | **HU #53 (Tarea 1-3)** | Radiotaxis: Dashboard, tablas y extractor web contingente | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
 | **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 15 tests |
 | **HU #54 (Tarea 2)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) | 5 tests |
-| **HU #54 (Tarea 3 / Actual)** | Sincronización eventos bot con Rutas y Supabase (CA-54.1, CA-54.2, CA-54.3) | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 14 tests |
+| **HU #54 (Tarea 3)** | Sincronización eventos bot con Rutas y Supabase (CA-54.1, CA-54.2, CA-54.3) | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 14 tests |
+| **HU #54 (Tarea 4 / Actual)** | Recepción, descarga y transcripción de audios (OGG) hacia asistente de rutas | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) / [`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts) | 28 tests (21 Telegram + 7 Audio) |
 
 ---
 
@@ -132,15 +133,36 @@
 - [x] **`TelegramService > validateSecretToken > debe validar exitosamente con header correcto`**: Coincidencia exacta con `TELEGRAM_WEBHOOK_SECRET`.
 - [x] **`TelegramService > validateSecretToken > debe validar exitosamente con query param correcto`**: Coincidencia por query param.
 - [x] **`TelegramService > validateSecretToken > debe rechazar tokens erróneos o nulos`**: Seguridad ante accesos no autorizados.
-- [x] **`TelegramService > extractIncomingMessage > debe extraer chatId, text y remitente desde un update con message`**: Normalización de datos entrantes.
-- [x] **`TelegramService > extractIncomingMessage > debe extraer datos correctamente desde un edited_message`**: Soporte para mensajes editados.
-- [x] **`TelegramService > extractIncomingMessage > debe recortar espacios en blanco y descartar updates sin texto (stickers/fotos)`**: Filtro de mensajes no textuales.
-- [x] **`TelegramService > handleIncomingUpdate > debe procesar exitosamente devolviendo chatId y text`**: Conexión base lista para el chatbot.
+- [x] **`TelegramService > extractIncomingMessage > debe detectar notas de voz y extraer file_id y duración con isVoice: true`**: Detección de mensajes de voz (`msg.voice`) con extracción de `file_id`.
+- [x] **`TelegramService > extractIncomingMessage > debe detectar archivos de audio (msg.audio) y extraer file_id y mime_type`**: Soporte para archivos de audio general (`msg.audio`) enviados en formato OGG Opus.
+- [x] **`TelegramService > handleIncomingUpdate > debe responder con mensaje de orientación cuando la nota de voz no incluye file_id`**: Gestión accesible cuando falta el archivo físico.
+- [x] **`TelegramService > handleIncomingUpdate > debe procesar nota de voz con file_id descargando, transcribiendo y respondiendo`**: Flujo completo de orquestación de voz en el webhook.
+- [x] **`TelegramService > getFile > debe obtener la ruta remota file_path cuando la API de Telegram responde ok: true`**: Consulta al endpoint `/getFile` oficial.
+- [x] **`TelegramService > getFile > debe devolver null si la respuesta de Telegram no contiene file_path`**: Manejo de fallos en la consulta del archivo.
+- [x] **`TelegramService > getFile > debe devolver null y manejar la excepción de red de axios sin lanzar error no controlado`**: Resiliencia ante fallas de conectividad.
+- [x] **`TelegramService > downloadTelegramFile > debe descargar físicamente el archivo de audio OGG en una ruta temporal del backend`**: Descarga de bytes en disco temporal con `responseType: 'arraybuffer'`.
+- [x] **`TelegramService > downloadTelegramFile > debe lanzar excepción si la descarga de audio falla por error de red`**: Propagación controlada de errores de descarga.
+- [x] **`TelegramService > processVoiceMessage > debe ejecutar el flujo completo de voz: getFile -> download -> transcribe -> NLP -> Rutas -> sendMessage`**: Integración extremo a extremo de voz a respuesta enriquecida.
+- [x] **`TelegramService > processVoiceMessage > debe enviar mensaje orientativo si el audio transcrito resulta vacío`**: Mensaje accesible al usuario ante audio inaudible o vacío.
+- [x] **`TelegramService > processVoiceMessage > debe manejar errores de red o fallo en getFile sin que el backend caiga y notificando al usuario`**: Contingencia y notificación transparente al usuario.
 - [x] **`TelegramService > syncTelegramEventWithRoutes > debe conectar con RutasService y enviar respuesta enriquecida ante consulta de destino (CA-54.2)`**: Consulta destinos como "Hospital Santo Tomás", recupera rutas de Supabase/contingencia y las formatea con emojis (🚌, 📍, ⏱️, 💰) y negritas.
 - [x] **`TelegramService > syncTelegramEventWithRoutes > debe soportar parse_mode: Markdown si es requerido por el cliente`**: Valida respuesta compatible con `parse_mode: 'Markdown'`.
 - [x] **`TelegramService > syncTelegramEventWithRoutes > debe procesar consultas en un tiempo menor o igual a 1.5 segundos (CA-54.1)`**: Cumplimiento estricto del criterio de tiempo de respuesta <= 1500 ms.
 - [x] **`TelegramService > syncTelegramEventWithRoutes > CA-54.3: debe lograr una tasa de éxito >= 85% ante 20 comandos de prueba consecutivos`**: Validación de resiliencia y precisión con 20 comandos variados consecutivos logrando el 100% de éxito.
 - [x] **`TelegramService > sendMessage > debe llamar a axios.post con payload correcto y manejar excepciones de red limpiamente`**: Envío seguro de mensajes con modo HTML o Markdown.
+
+---
+
+### Suite 11: Transcripción de Audio Voz a Texto ([`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts))
+> **Objetivo:** Servicio desacoplado de transcripción de voz (STT) para notas de voz `.ogg` de Telegram, con soporte para APIs externas (Whisper) y puente simulado de contingencia y pruebas (HU #54 - Tarea 4).
+
+- [x] **`AudioTranscriptionService > debe estar definido`**: Instanciación correcta del servicio en el contenedor de NestJS.
+- [x] **`AudioTranscriptionService > debe arrojar error si la ruta del archivo es vacía`**: Validación estricta de parámetros de entrada.
+- [x] **`AudioTranscriptionService > debe arrojar error si el archivo no existe físicamente`**: Comprobación física de existencia en disco.
+- [x] **`AudioTranscriptionService > debe devolver cadena vacía si el archivo de audio tiene 0 bytes`**: Manejo seguro de archivos sin contenido.
+- [x] **`AudioTranscriptionService > debe procesar el archivo mediante puente local de transcripción en entorno de pruebas`**: Decodificación y extracción de texto en entornos de desarrollo y pruebas.
+- [x] **`AudioTranscriptionService > debe llamar a la API externa de Whisper si se proporciona OPENAI_API_KEY`**: Integración con multipart y llamada a la API de transcripción externa.
+- [x] **`AudioTranscriptionService > debe degradar a puente simulado si la API externa falla con error de red`**: Resiliencia y tolerancia a fallos ante caídas del proveedor STT.
 
 ---
 
@@ -161,7 +183,7 @@ Ubicación: [`test/chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/
 Todos los siguientes comandos deben ejecutarse desde la carpeta `backend/`:
 
 ```powershell
-# 1. Ejecutar TODAS las pruebas unitarias (31 tests en 7 suites)
+# 1. Ejecutar TODAS las pruebas unitarias (94 tests en 11 suites)
 npm test
 
 # 2. Ejecutar pruebas unitarias con reporte detallado de cada test individual
@@ -180,6 +202,18 @@ npm run test:watch
 ### Comandos para ejecutar pruebas unitarias suite por suite:
 
 ```powershell
+# Suite de Servicio Telegram (Sincronización, Rutas y Audios OGG) (HU #54)
+npx jest src/telegram/telegram.service.spec.ts --verbose
+
+# Suite de Transcripción de Audio Voz a Texto (HU #54)
+npx jest src/telegram/audio-transcription.service.spec.ts --verbose
+
+# Suite del Webhook de Telegram (HU #54)
+npx jest src/telegram/telegram.controller.spec.ts --verbose
+
+# Suite de Formateador Telegram (HTML, negritas, emojis) (HU #54)
+npx jest src/formatter/telegram-formatter.service.spec.ts --verbose
+
 # Suite de Radiotaxis (HU #53)
 npx jest src/transport/taxis/taxis.service.spec.ts --verbose
 

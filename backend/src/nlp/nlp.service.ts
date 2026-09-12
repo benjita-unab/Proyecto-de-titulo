@@ -45,14 +45,39 @@ export class NlpService {
       };
     }
 
+    // Normalizar texto para análisis léxico (sin tildes, sin signos de puntuación iniciales ni caracteres especiales)
+    const normalized = text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Detectar comandos de Telegram (/start, /help)
+    const isTelegramCommand = /^\/(?:start|help)\b/i.test(text.trim());
+
+    // Patrón de saludos y expresiones de bienvenida
+    const greetingPattern =
+      /\b(?:hola|buen dia|buenos dias|buenas tardes|buenas noches|buenas|saludos|alo|que tal|como estas|como estan|como esta|como te va|como le va|como les va|como va|hola bot|bot|asistente)\b/i;
+
+    // Residuo léxico descartando saludos y cortesías para evaluar si el mensaje es exclusivamente un saludo
+    const remainingAfterGreeting = normalized
+      .replace(
+        /\b(?:hola|buen dia|buenos dias|buenas tardes|buenas noches|buenas|saludos|alo|que tal|como estas|como estan|como esta|como te va|como le va|como les va|como va|bot|asistente|todos|amigos|amigo|por favor|gracias|consulta|una consulta|de|a|el|la|los|las)\b/gi,
+        '',
+      )
+      .replace(/\s+/g, ' ')
+      .trim();
+
     // Detectar saludo o bienvenida amigable
     const isGreeting =
-      !isTravelIntent &&
-      !isTaxiQuery &&
-      !isScheduleQuery &&
-      /^(?:\/start|\/help|hola\b|buenos d[ií]as|buenas tardes|buenas noches|buenas\b|saludos\b|alo\b|hola bot\b|bot\b|que tal\b|como estas\b|hola como estas\b)/i.test(
-        text.trim(),
-      );
+      isTelegramCommand ||
+      (!isTravelIntent &&
+        !isTaxiQuery &&
+        !isScheduleQuery &&
+        greetingPattern.test(normalized) &&
+        remainingAfterGreeting.length === 0);
 
     if (isGreeting) {
       return {
@@ -82,8 +107,11 @@ export class NlpService {
     // Remove punctuation
     cleaned = cleaned.replace(/[.,;!?¿¡]/g, '');
     
-    // Remover palabras de cortesía y relleno comunes
-    cleaned = cleaned.replace(/\b(por favor|gracias|hola|como estas|buenos dias|buenas tardes|buenas noches|mira|necesito que me entregues directamente una linea de bus que|necesito que me des|me gustaria|quisiera|quiero|necesito)\b/g, '');
+    // Remover palabras de cortesía, saludos y relleno comunes
+    cleaned = cleaned.replace(
+      /\b(por favor|gracias|hola|como estas|como estan|como esta|como te va|como le va|como les va|buen dia|buenos dias|buenas tardes|buenas noches|buenas|que tal|saludos|mira|necesito que me entregues directamente una linea de bus que|necesito que me des|me gustaria|quisiera|quiero|necesito)\b/g,
+      '',
+    );
     
     return cleaned.replace(/\s+/g, ' ').trim();
   }

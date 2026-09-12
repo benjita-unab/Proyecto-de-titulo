@@ -51,6 +51,9 @@ export interface ParsedTelegramMessage {
   username?: string;
   date: number;
   isVoice?: boolean;
+  fileId?: string;
+  mimeType?: string;
+  duration?: number;
 }
 
 export class TelegramWebhookResponseDto {
