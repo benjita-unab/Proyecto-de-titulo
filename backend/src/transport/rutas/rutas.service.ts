@@ -8,22 +8,37 @@ export interface RouteOption {
   tipo: string;
 }
 
-const RUTAS_CONTINGENCIA_LIMACHE: Array<{ linea: string; recorrido: string; tipo: string }> = [
-  { linea: 'Línea 01', recorrido: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Ramón de la Cerda, Estación Limache, Av. Eastman, Lo Narváez. Sirve para: Hospital Santo Tomás, Centro comercial Urmeneta, Estación', tipo: 'Microbús' },
-  { linea: 'Línea 02', recorrido: 'Terminal Victoria, Palmira Romano Sur, República, San Francisco, Estación Limache, Av. Eastman, Centro de Olmué, Cajón Grande. Sirve para: Hospital Santo Tomás, Eje República, Estación', tipo: 'Microbús' },
-  { linea: 'Línea 04', recorrido: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Serrano, Estación Limache, Av. Eastman, Paradero 34 Gabriela Mistral. Sirve para: Hospital Santo Tomás, Centro, Estación', tipo: 'Microbús' },
-  { linea: 'Línea 08', recorrido: 'Terminal Victoria, Palmira Romano Sur, República, San Francisco, Limachito, Camino Los Laureles. Sirve para: Limache Viejo, Los Laureles, Plaza 40 Horas', tipo: 'Microbús' },
-  { linea: 'Línea 09', recorrido: 'Estación Limache, Ramón de la Cerda, Urmeneta, República, Palmira Romano Sur, Santa Rosa. Sirve para: Estación Limache, Centro, Hospital Santo Tomás, Plaza 40 Horas, Santa Rosa', tipo: 'Microbús' },
-  { linea: 'Línea 11', recorrido: 'Estación Limache, Urmeneta, República, Palmira Romano Sur, Camino Lliu Lliu, Tranque Lliu Lliu. Sirve para: Estación Limache, Hospital Santo Tomás, Plaza 40 Horas, Lliu Lliu', tipo: 'Microbús' },
-  { linea: 'Línea 12', recorrido: 'Terminal Victoria, Palmira Romano Sur, República, Colón, Cancha Los Maitenes. Sirve para: Limache Viejo, Los Maitenes, Plaza 40 Horas', tipo: 'Microbús' },
-  { linea: 'Línea 13', recorrido: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Estación Limache, Camino La Paloma. Sirve para: Hospital Santo Tomás, Centro, Estación Limache, La Paloma', tipo: 'Microbús' },
-  { linea: 'Línea 15', recorrido: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Serrano, Ramón de la Cerda, Estación Limache. Sirve para: Conectar directo Limache Viejo, Hospital Santo Tomás, Centro, Estación Limache', tipo: 'Microbús' },
-  { linea: 'Línea 21', recorrido: 'Terminal Victoria, Palmira Romano Sur, República, Estación Limache, Av. Eastman, Almendral hacia Cuesta La Dormida. Sirve para: Hospital Santo Tomás, Estación Limache, Olmué', tipo: 'Microbús' },
-  { linea: 'Línea 22', recorrido: 'Sale de Estación Limache hacia Av. Eastman, Plaza de Olmué, Camarico, La Dormida. Sirve para: Viajes desde la Estación Limache hacia Olmué', tipo: 'Microbús' },
-  { linea: 'Línea 23', recorrido: 'Sale de Estación Limache hacia Av. Eastman, Lo Narváez, La Loma de la Vega. Sirve para: Salir de la Estación Limache hacia Olmué rural', tipo: 'Microbús' },
-  { linea: 'Línea 24', recorrido: 'Sale de Estación Limache hacia Av. Eastman, Granizo, Niño Dios de Las Palmas. Sirve para: Salir de la Estación Limache hacia Las Palmas', tipo: 'Microbús' },
-  { linea: 'Línea 8Y', recorrido: 'Estación Limache, Urmeneta, Palmira Romano Sur, Ruta 60-CH, Tabolango. Sirve para: Hospital Santo Tomás, Centro, Tabolango', tipo: 'Microbús' },
-  { linea: 'Línea 22Y', recorrido: 'Sale de Estación Limache hacia Av. Eastman, Ramayana, Km 22 Cuesta La Dormida. Sirve para: Salir de la Estación Limache hacia Olmué alto', tipo: 'Microbús' },
+const RUTAS_CONTINGENCIA_MARGA_MARGA: Array<{ linea: string; recorrido: string; tipo: string }> = [
+  {
+    linea: 'Línea C02',
+    recorrido: 'Sector Peumo, Fundo El Litre, Estación Metro Villa Alemana, Eje Comercial Av. Valparaíso, Belloto Norte, Estación Quilpué. Sirve para: Peumo, Fundo El Litre, Estación Metro Villa Alemana, Eje Comercial Av. Valparaíso, Belloto Norte, Quilpué, Centro',
+    tipo: 'Microbús',
+  },
+  {
+    linea: 'Línea 108',
+    recorrido: 'Sectores altos de Peñablanca, Peumo, Centro de Villa Alemana, Av. Valparaíso, Mena, Pompeya, Avenidas comerciales. Sirve para: Peñablanca, Peumo, Centro de Villa Alemana, Pompeya, Comercio, Mena',
+    tipo: 'Microbús',
+  },
+  {
+    linea: 'Línea C03',
+    recorrido: 'Sector residencial Los Pinos, Vicuña Mackenna, Plaza de Quilpué, Centro comercial Quilpué, Estación Metro Quilpué. Sirve para: Los Pinos, Plaza de Quilpué, Vicuña Mackenna, Estación Metro Quilpué, Centro, Trámites y Comercio',
+    tipo: 'Microbús',
+  },
+  {
+    linea: 'Línea 111',
+    recorrido: 'Los Pinos, Hospital de Quilpué, Centro Comercial Quilpué, Arterias principales Peyronet, Camino Troncal, Viña del Mar, Playa Ancha. Sirve para: Los Pinos, Hospital de Quilpué, Centro comercial, Salud, Traslados hacia la costa',
+    tipo: 'Microbús',
+  },
+  {
+    linea: 'Línea Q02',
+    recorrido: 'Eje troncal principal, Camino Troncal, Av. Los Carrera, Av. Valparaíso, Centro de Villa Alemana, El Belloto (zona comercial y feria), Centro de Quilpué, Viña del Mar. Sirve para: Centro Villa Alemana, El Belloto, Feria El Belloto, Av. Los Carrera, Centro de Quilpué, Viña del Mar, Costa',
+    tipo: 'Microbús',
+  },
+  {
+    linea: 'Línea 105-D',
+    recorrido: 'Peñablanca, Centro Villa Alemana, Vía expresa Troncal Sur, Puntos neurálgicos de transbordo rápido, Viña del Mar, Plaza Victoria Valparaíso. Sirve para: Peñablanca, Centro Villa Alemana, Troncal Sur, Transbordo rápido, Plaza Victoria, Valparaíso',
+    tipo: 'Microbús',
+  },
 ];
 
 @Injectable()
@@ -90,9 +105,9 @@ export class RutasService {
       }
     }
 
-    // Si Supabase no tiene datos o falló, usar contingencia oficial de Limache
+    // Si Supabase no tiene datos o falló, usar contingencia oficial de Marga Marga (Quilpué / Villa Alemana)
     if (allRoutes.length === 0) {
-      allRoutes = RUTAS_CONTINGENCIA_LIMACHE;
+      allRoutes = RUTAS_CONTINGENCIA_MARGA_MARGA;
     }
 
     // Filtrado inteligente tolerante a acentos, mayúsculas y variaciones
@@ -107,7 +122,7 @@ export class RutasService {
       if (searchTerms.length > 0) {
         // Coincidir si contiene al menos uno de los términos significativos o todos
         return searchTerms.every((term) => textoCompleto.includes(term)) ||
-               searchTerms.some((term) => ['hospital', 'plaza', 'estacion', 'centro', '40'].includes(term) && textoCompleto.includes(term));
+               searchTerms.some((term) => ['hospital', 'plaza', 'estacion', 'centro', 'quilpue', 'alemana', 'belloto', 'pinos', '40'].includes(term) && textoCompleto.includes(term));
       }
 
       return textoCompleto.includes(normalizedDest);

@@ -29,9 +29,9 @@ describe('FormatterService', () => {
       expect(response.options.length).toBe(3);
       expect(response.options[0].linea).toBe('Línea 1');
       expect(response.text).toContain('Aquí tienes opciones para llegar a hospital');
-      expect(response.text).toContain('🚌 *Línea 1 (Microbús Agdabus)*');
+      expect(response.text).toContain('🚌 *Línea 1*');
       expect(response.text).toContain('Pasa por: Calle A.');
-      expect(response.text).toContain('https://www.google.com/maps/dir/?api=1&destination=hospital%20Limache&travelmode=transit');
+      expect(response.text).toContain('https://www.google.com/maps/dir/?api=1&destination=hospital%20Quilpue&travelmode=transit');
     });
 
     it('debe retornar una respuesta amigable y guiada por destino no reconocido', () => {
@@ -39,7 +39,7 @@ describe('FormatterService', () => {
       
       expect(response.options.length).toBe(0);
       expect(response.text).toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir.');
-      expect(response.text).toContain('¿Me podrías indicar si vas al Hospital Santo Tomás, a la Estación Limache, al Centro o a la Plaza de las 40 Horas?');
+      expect(response.text).toContain('¿Me podrías indicar si vas al Hospital de Quilpué, a la Estación Metro Quilpué, Estación Villa Alemana, a la Feria El Belloto o a Los Pinos?');
       // Verifica que no hay códigos técnicos como "Error 404" o "Exception"
       expect(response.text).not.toContain('Error');
       expect(response.text).not.toContain('undefined');

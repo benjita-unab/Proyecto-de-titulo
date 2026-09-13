@@ -73,5 +73,44 @@ describe('NlpService', () => {
       expect(service.processQuery('como estan')).toEqual({ intent: 'Saludo', destination: null });
       expect(service.processQuery('Hola, ¿cómo están?')).toEqual({ intent: 'Saludo', destination: null });
     });
+
+    it('should return Consultar RadioTaxi with detected comuna', () => {
+      expect(service.processQuery('¿Cuáles son los taxis de Quilpué?')).toEqual({
+        intent: 'Consultar RadioTaxi',
+        destination: null,
+        comuna: 'Quilpué',
+      });
+      expect(service.processQuery('necesito un radiotaxi en Villa Alemana')).toEqual({
+        intent: 'Consultar RadioTaxi',
+        destination: null,
+        comuna: 'Villa Alemana',
+      });
+      expect(service.processQuery('dame el numero de taxi')).toEqual({
+        intent: 'Consultar RadioTaxi',
+        destination: null,
+        comuna: null,
+      });
+    });
+
+    it('should return Consultar Horario with line or general comuna', () => {
+      expect(service.processQuery('¿A qué hora pasa la Línea 111?')).toEqual({
+        intent: 'Consultar Horario',
+        destination: null,
+        linea: '111',
+        comuna: null,
+      });
+      expect(service.processQuery('Horarios de las micros de Villa Alemana en general')).toEqual({
+        intent: 'Consultar Horario',
+        destination: null,
+        linea: null,
+        comuna: 'Villa Alemana',
+      });
+      expect(service.processQuery('Horarios de Quilpué')).toEqual({
+        intent: 'Consultar Horario',
+        destination: null,
+        linea: null,
+        comuna: 'Quilpué',
+      });
+    });
   });
 });

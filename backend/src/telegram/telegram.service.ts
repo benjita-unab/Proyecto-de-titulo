@@ -182,9 +182,9 @@ export class TelegramService {
         `¡Hola${parsed.senderName ? ' <b>' + (this.telegramFormatter ? this.telegramFormatter.escapeHtml(parsed.senderName) : parsed.senderName) + '</b>' : ''}! He recibido tu nota de voz.\n\n` +
         `Por el momento atiendo mediante mensajes de voz o texto.\n\n` +
         `📍 <b>Puedes escribir directamente:</b>\n` +
-        `• 🚌 <b>Recorridos:</b> "¿Cómo llego al Hospital?" o "Plaza de las 40 Horas"\n` +
-        `• ⏱️ <b>Horarios:</b> "Horarios de la Línea 01"\n` +
-        `• 🚕 <b>Radio Taxis:</b> "Taxi"\n\n` +
+        `• 🚌 <b>Recorridos:</b> "¿Cómo llego al Hospital de Quilpué?" o "Feria El Belloto"\n` +
+        `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Villa Alemana"\n` +
+        `• 🚕 <b>Radio Taxis:</b> "Taxis Quilpué" o "Radio Taxi Villa Alemana"\n\n` +
         `<i>Escribe tu consulta con tranquilidad y te responderé de inmediato.</i>`;
 
       const sent = await this.sendMessage(parsed.chatId, voiceReply, 'HTML');
@@ -255,21 +255,33 @@ export class TelegramService {
         replyText = welcome.text;
         parseMode = 'HTML';
       } else if (intent === 'Consultar RadioTaxi' && this.taxisService) {
-        const taxis = await this.taxisService.getCentralesRadioTaxi();
-        const formatted = this.telegramFormatter.formatRadioTaxisResponse(taxis);
+        const comuna = (queryResult as any).comuna;
+        const taxis = await this.taxisService.getCentralesRadioTaxi(comuna);
+        const formatted = this.telegramFormatter.formatRadioTaxisResponse(taxis, comuna);
         replyText = formatted.text;
         parseMode = 'HTML';
       } else if (intent === 'Consultar Horario' && this.horariosService) {
         const lineaBuscada = (queryResult as any).linea;
-        const dbHorarios = await this.horariosService.getHorariosPorLinea(lineaBuscada);
-        const statusResult = this.horariosService.checkHorarioStatus(
-          undefined,
-          dbHorarios.franjas,
-          { linea: dbHorarios.nombreLinea, empresa: dbHorarios.empresa },
-        );
-        const formatted = this.telegramFormatter.formatHorarioResponse(statusResult);
-        replyText = formatted.text;
-        parseMode = 'HTML';
+        const comuna = (queryResult as any).comuna;
+
+        if (lineaBuscada) {
+          // Consulta detallada de una línea específica
+          const dbHorarios = await this.horariosService.getHorariosPorLinea(lineaBuscada);
+          const statusResult = this.horariosService.checkHorarioStatus(
+            undefined,
+            dbHorarios.franjas,
+            { linea: dbHorarios.nombreLinea, empresa: dbHorarios.empresa },
+          );
+          const formatted = this.telegramFormatter.formatHorarioResponse(statusResult, comuna);
+          replyText = formatted.text;
+          parseMode = 'HTML';
+        } else {
+          // Consulta general de horarios de una comuna o de todas las líneas
+          const lineasResumen = this.horariosService.getLineasResumen(comuna);
+          const formatted = this.telegramFormatter.formatHorariosGeneralesResponse(lineasResumen, comuna);
+          replyText = formatted.text;
+          parseMode = 'HTML';
+        }
       } else if (intent === 'Buscar Ruta' && destination && this.rutasService) {
         // Consulta directa a capa de datos de rutas (Supabase / contingencia Limache)
         const routes = await this.rutasService.getRoutesForDestination(destination);

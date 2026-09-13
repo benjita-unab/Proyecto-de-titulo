@@ -121,7 +121,7 @@ describe('TelegramFormatterService', () => {
     it('debe incluir el enlace funcional a Google Maps con destino codificado', () => {
       const result = service.formatRouteResponse('Plaza 40 Horas', [mockRoutes[0]]);
       expect(result.text).toContain(
-        'https://www.google.com/maps/dir/?api=1&amp;destination=Plaza%2040%20Horas%20Limache&amp;travelmode=transit',
+        'https://www.google.com/maps/dir/?api=1&amp;destination=Plaza%2040%20Horas%20Quilpue&amp;travelmode=transit',
       );
     });
 
@@ -137,8 +137,8 @@ describe('TelegramFormatterService', () => {
     it('debe retornar mensaje amigable de contingencia si no hay rutas o destino es vacío', () => {
       const resultVacio = service.formatRouteResponse('', []);
       expect(resultVacio.text).toContain('Disculpa, no encontré recorridos directos');
-      expect(resultVacio.text).toContain('Hospital Santo Tomás');
-      expect(resultVacio.text).toContain('Estación Limache');
+      expect(resultVacio.text).toContain('Hospital de Quilpué');
+      expect(resultVacio.text).toContain('Estación Metro Quilpué');
 
       const resultNull = service.formatRouteResponse('Destino Raro', null as unknown as TelegramRouteDetail[]);
       expect(resultNull.text).toContain('Disculpa, no encontré recorridos directos');
@@ -201,7 +201,7 @@ describe('TelegramFormatterService', () => {
     it('debe personalizar el saludo cuando se ingresa nombre del usuario', () => {
       const result = service.formatWelcomeMessage('Don Juan & Señora Elena');
       expect(result.text).toContain('¡Hola <b>Don Juan &amp; Señora Elena</b>!');
-      expect(result.text).toContain('Movitech Limache');
+      expect(result.text).toContain('MoviTech');
     });
 
     it('debe presentar saludo general accesible si no se provee nombre', () => {

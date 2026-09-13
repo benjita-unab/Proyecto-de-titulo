@@ -1,6 +1,6 @@
 # 📑 Registro Oficial de Pruebas Unitarias y Plan de Pruebas
 
-**Proyecto:** Aplicación de Transporte para Adultos Mayores (Limache)  
+**Proyecto:** Aplicación de Transporte para Adultos Mayores (Quilpué, Villa Alemana y Marga Marga / Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
 **Total de Suites de Pruebas Unitarias:** 11 Suites  
 **Total de Pruebas Unitarias Registradas:** 94 Tests (100% pasando)  
@@ -24,11 +24,12 @@
 | **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 15 tests |
 | **HU #54 (Tarea 2)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) | 5 tests |
 | **HU #54 (Tarea 3)** | Sincronización eventos bot con Rutas y Supabase (CA-54.1, CA-54.2, CA-54.3) | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 14 tests |
-| **HU #54 (Tarea 4 / Actual)** | Recepción, descarga y transcripción de audios (OGG) hacia asistente de rutas | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) / [`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts) | 28 tests (21 Telegram + 7 Audio) |
+| **HU #54 (Tarea 4)** | Recepción, descarga y transcripción de audios (OGG) hacia asistente de rutas | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) / [`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts) | 28 tests (21 Telegram + 7 Audio) |
+| **Actualización Reciente** | Extracción, población y actualización multicomunal de transporte y radiotaxis (Quilpué y Villa Alemana) | [`poblar-transporte.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/scripts/poblar-transporte.ts), [`poblar-horarios.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/scripts/poblar-horarios.ts), [`poblar-radiotaxis.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/scripts/poblar-radiotaxis.ts), [`nlp.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.spec.ts), [`rutas.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/rutas/rutas.service.spec.ts), [`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts), [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) | 94 tests unitarios integrados (100% pasando) |
 
 ---
 
-## 2. Detalle Exhaustivo de Pruebas Unitarias (76 Tests)
+## 2. Detalle Exhaustivo de Pruebas Unitarias (94 Tests)
 
 ### Suite 1: Horarios de Servicio ([`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts))
 > **Objetivo:** Verificar la lógica de franjas horarias y comparación con la hora del dispositivo para adultos mayores (HU #22).
@@ -269,4 +270,47 @@ npm run db:clean
 cd "..\App para adultos mayores"
 npm run build
 ```
+
+---
+
+## 5. Módulo de Extracción y Población Multicomunal (Quilpué y Villa Alemana)
+
+> **Objetivo:** Permitir la transición y soporte de transporte público y radio taxis para las comunas de Quilpué y Villa Alemana (Marga Marga), manteniendo el esquema relacional en Supabase y la compatibilidad con el asistente conversacional para adultos mayores.
+
+### A. Fuentes Web Conectadas
+1. **Moovit Valparaíso y Marga Marga:**  
+   `https://moovitapp.com/tripplan/valparaiso_y_vina_del_mar-3121/lines/es?ref=16&customerId=4908`  
+   *Uso:* Consulta de líneas y trazados de transporte metropolitano con respaldo de datos de alta fidelidad.
+2. **TodoRadioTaxi Villa Alemana:**  
+   `https://todoradiotaxi.cl/villa-alemana/`  
+   *Uso:* Scraping directo mediante Cheerio extrayendo centrales, teléfonos, direcciones y horarios.
+3. **Páginas Amarillas Quilpué:**  
+   `https://www.amarillas.cl/b/radio-taxi-las-24-horas/quilpue`  
+   *Uso:* Extracción estructurada de JSON-LD / `__NEXT_DATA__` con centrales verificadas de Quilpué.
+
+### B. Datos Oficiales Cargados en Supabase
+* **Tabla `medio_transporte` (6 Líneas):**
+  - `TRANS-C02`: Línea C02 (Peumo - Villa Alemana - Belloto Norte - Quilpué) | TMV
+  - `TRANS-108`: Línea 108 (Peumo / Peñablanca - Mena - Pompeya) | Fenur S.A.
+  - `TRANS-C03`: Línea C03 (Los Pinos - Estación Quilpué) | TMV
+  - `TRANS-111`: Línea 111 (Los Pinos - Hospital - Peyronet - Playa Ancha) | Fenur S.A.
+  - `TRANS-Q02`: Línea Q02 (Villa Alemana - Quilpué - Viña del Mar) | TMV Marga Marga
+  - `TRANS-105D`: Línea 105-D (Peñablanca - Troncal Sur - Plaza Victoria) | Fenur S.A.
+* **Tabla `recorrido_transporte` (6 Trazados):**
+  - Puntos y destinos emblemáticos contextuales: *Estación Metro Villa Alemana*, *Estación Metro Quilpué*, *Plaza de Quilpué*, *Hospital de Quilpué*, *Centro Villa Alemana*, *Feria El Belloto*, *Belloto Norte*, *Los Pinos*, *Peumo*, *Peñablanca*, *Troncal Sur*, etc.
+* **Tabla `horario_servicio` (18 Franjas Horarias):**
+  - Franjas diferenciadas para Lunes a Viernes, Sábados y Domingos/Festivos.
+* **Tabla `servicio_radiotaxi` (5 Centrales Reales Activas):**
+  - `TAXI-VLM-01`: Radio Taxi Aracis Vía (+56989005971 / Madrid 2594, Villa Alemana)
+  - `TAXI-VLM-02`: Radio Taxi Cartagena (+56956327251 / Covadonga 246, Villa Alemana)
+  - `TAXI-VLM-03`: Radio Taxi Villa Alemana C & B (+56323176457 / Los Peumos 2140, Villa Alemana)
+  - `TAXI-QLP-04`: Taxiexpress Quilpué (+56989795644 / Pje Campo Lindo 2695, Quilpué)
+  - `TAXI-QLP-05`: Radio Taxi Transporte Privado 24 Horas (+56997996241 / Lago Lanalhue 2405, Quilpué)
+
+### C. Módulos Adaptados en el Backend
+- **NLP ([`nlp.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.ts)):** Captura de códigos de líneas alfanuméricos con letras y guiones (`C02`, `Q02`, `105-D`, `108`, `111`).
+- **Rutas ([`rutas.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/rutas/rutas.service.ts)):** Filtrado de contingencia y búsqueda por palabras clave (`quilpue`, `alemana`, `belloto`, `pinos`, `hospital`, `estacion`, `plaza`).
+- **Horarios ([`horarios.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.ts)):** Soporte de líneas alfanuméricas de Marga Marga.
+- **Taxis ([`taxis.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.ts)):** Contingencia oficial con discado directo para Villa Alemana y Quilpué.
+
 
