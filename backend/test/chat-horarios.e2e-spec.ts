@@ -33,7 +33,7 @@ describe('Chat & Horarios Integration (e2e)', () => {
     expect(res.body.showHorarios).toBe(true);
     expect(res.body.horarios).toBeDefined();
     expect(res.body.horarios.status).toBe('EN_SERVICIO');
-    expect(res.body.text).toContain('Horarios de Operación - Micros Limache');
+    expect(res.body.text).toContain('Horarios de Operación');
     expect(res.body.horarios.franjas.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -71,13 +71,13 @@ describe('Chat & Horarios Integration (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/api/chat')
       .send({
-        text: '¿Cómo llego al Hospital Santo Tomás?',
+        text: '¿Cómo llego al Hospital de Quilpué?',
       })
       .expect(201);
 
     expect(res.body).toBeDefined();
     expect(res.body.text).toContain('Aquí tienes opciones para llegar');
     expect(res.body.options.length).toBeGreaterThan(0);
-    expect(res.body.text).toContain('Línea 01');
+    expect(res.body.text).toContain('Línea 111');
   });
 });

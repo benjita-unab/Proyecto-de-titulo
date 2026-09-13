@@ -21,9 +21,17 @@ export class NlpService {
       );
 
     if (isTaxiQuery) {
+      let comuna: string | null = null;
+      if (/quilpu[eé]/i.test(text)) {
+        comuna = 'Quilpué';
+      } else if (/villa\s*alemana|alemana|pe[ñn]ablanca/i.test(text)) {
+        comuna = 'Villa Alemana';
+      }
+
       return {
         intent: 'Consultar RadioTaxi',
         destination: null,
+        comuna,
       };
     }
 
@@ -34,14 +42,22 @@ export class NlpService {
       );
 
     if (isScheduleQuery) {
-      // Verificar si especifica una línea particular (ej. "línea 22", "linea 2", "linea 01", "22")
-      const lineaMatch = text.match(/\b(?:linea|línea|micro)\s*(\d+[a-zA-Z]?)\b/i);
+      // Verificar si especifica una línea particular (ej. "línea C02", "linea 108", "micro Q02", "linea 105-D", "linea 22")
+      const lineaMatch = text.match(/\b(?:linea|línea|micro|recorrido)\s+([0-9]+[a-zA-Z0-9-]*(?:-[a-zA-Z0-9]+)?|[a-zA-Z][0-9]+(?:-[a-zA-Z0-9]+)?)\b/i);
       const linea = lineaMatch ? lineaMatch[1] : null;
+
+      let comuna: string | null = null;
+      if (/quilpu[eé]/i.test(text)) {
+        comuna = 'Quilpué';
+      } else if (/villa\s*alemana|alemana|pe[ñn]ablanca/i.test(text)) {
+        comuna = 'Villa Alemana';
+      }
 
       return {
         intent: 'Consultar Horario',
         destination: null,
         linea,
+        comuna,
       };
     }
 

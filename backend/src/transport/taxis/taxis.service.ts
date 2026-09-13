@@ -15,33 +15,53 @@ export interface RadioTaxiDto {
 
 export const RADIOTAXIS_CONTINGENCIA_LIMACHE: RadioTaxiDto[] = [
   {
-    id: 'TAXI-LIM-01',
-    nombre: 'Radio Taxi Limache',
-    telefono: '+56322626021',
-    telefonoFormateado: '32 2626021',
-    direccionBase: 'Porvenir 574, Limache',
+    id: 'TAXI-VLM-01',
+    nombre: 'Radio Taxi Aracis Vía',
+    telefono: '+56989005971',
+    telefonoFormateado: '(+56 9) 8900 5971',
+    direccionBase: 'Madrid 2594, Villa Alemana',
+    tarifaBaseEstimada: '$2.500 - $3.200',
+    horarioAtencion: 'Lun a Dom 24 horas',
+    autorizada: true,
+  },
+  {
+    id: 'TAXI-VLM-02',
+    nombre: 'Radio Taxi Cartagena',
+    telefono: '+56956327251',
+    telefonoFormateado: '(+56 9) 5632 7251',
+    direccionBase: 'Covadonga 246, Villa Alemana',
     tarifaBaseEstimada: '$2.500 - $3.000',
     horarioAtencion: 'Lun a Dom 24 horas',
     autorizada: true,
   },
   {
-    id: 'TAXI-LIM-02',
-    nombre: 'Radio Taxi SindTrabTaxis Colectivo Ltda',
-    telefono: '+5633256654',
-    telefonoFormateado: '(33) 256654',
-    direccionBase: 'Calle El Roble 1198, Limache',
+    id: 'TAXI-VLM-03',
+    nombre: 'Radio Taxi Villa Alemana C & B',
+    telefono: '+56323176457',
+    telefonoFormateado: '(32) 317 6457',
+    direccionBase: 'Los Peumos 2140, Villa Alemana',
     tarifaBaseEstimada: '$2.500 - $3.000',
-    horarioAtencion: 'Lun a Dom de 08:00 a 20:00 pm',
+    horarioAtencion: 'Lun a Dom 24 horas',
     autorizada: true,
   },
   {
-    id: 'TAXI-LIM-03',
-    nombre: 'Taxi Colectivos Juan Egaña – Limache',
-    telefono: '+5633414613',
-    telefonoFormateado: '(33) 414613',
-    direccionBase: 'Calle Los Alamos 816, Limache',
+    id: 'TAXI-QLP-01',
+    nombre: 'Taxiexpress Quilpué',
+    telefono: '+56989795644',
+    telefonoFormateado: '(+56 9) 8979 5644',
+    direccionBase: 'Pje Campo Lindo 2695, Quilpué',
+    tarifaBaseEstimada: '$2.500 - $3.200',
+    horarioAtencion: 'Lun a Dom 24 horas',
+    autorizada: true,
+  },
+  {
+    id: 'TAXI-QLP-02',
+    nombre: 'Radio Taxi Transporte Privado 24 Horas',
+    telefono: '+56997996241',
+    telefonoFormateado: '(+56 9) 9799 6241',
+    direccionBase: 'Lago Lanalhue 2405, Quilpué',
     tarifaBaseEstimada: '$2.500 - $3.000',
-    horarioAtencion: 'Lun a Dom de 08:00 a 20:00 pm',
+    horarioAtencion: 'Lun a Dom 24 horas',
     autorizada: true,
   },
 ];
@@ -72,58 +92,73 @@ export class TaxisService {
    * Recupera las centrales de radiotaxi autorizadas desde la tabla `servicio_radiotaxi` de Supabase.
    * Si la base de datos no está disponible, entrega la lista oficial de contingencia.
    */
-  async getCentralesRadioTaxi(): Promise<RadioTaxiDto[]> {
+  async getCentralesRadioTaxi(comuna?: string): Promise<RadioTaxiDto[]> {
+    let resultList: RadioTaxiDto[] = [];
+
     if (!this.supabase) {
-      return RADIOTAXIS_CONTINGENCIA_LIMACHE;
-    }
+      resultList = RADIOTAXIS_CONTINGENCIA_LIMACHE;
+    } else {
+      try {
+        let timeoutId: NodeJS.Timeout;
+        const fetchPromise = this.supabase
+          .from('servicio_radiotaxi')
+          .select('*')
+          .eq('activo', true)
+          .order('id_radiotaxi', { ascending: true });
 
-    try {
-      let timeoutId: NodeJS.Timeout;
-      const fetchPromise = this.supabase
-        .from('servicio_radiotaxi')
-        .select('*')
-        .eq('activo', true)
-        .order('id_radiotaxi', { ascending: true });
-
-      const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) => {
-        timeoutId = setTimeout(
-          () =>
-            resolve({
-              data: null,
-              error: new Error('Timeout consultando servicio_radiotaxi'),
-            }),
-          2000,
-        );
-      });
-
-      const { data, error } = (await Promise.race([
-        fetchPromise,
-        timeoutPromise,
-      ])) as any;
-      clearTimeout(timeoutId!);
-
-      if (error || !data || data.length === 0) {
-        if (error) {
-          this.logger.warn(
-            `Aviso consultando servicio_radiotaxi en Supabase: ${error.message}`,
+        const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) => {
+          timeoutId = setTimeout(
+            () =>
+              resolve({
+                data: null,
+                error: new Error('Timeout consultando servicio_radiotaxi'),
+              }),
+            2000,
           );
-        }
-        return RADIOTAXIS_CONTINGENCIA_LIMACHE;
-      }
+        });
 
-      return data.map((row: any) => ({
-        id: row.id_radiotaxi,
-        nombre: row.nombre_central,
-        telefono: row.telefono,
-        telefonoFormateado: row.telefono_formateado || row.telefono,
-        direccionBase: row.direccion_base,
-        tarifaBaseEstimada: row.tarifa_base_estimada || '$2.500 - $3.000',
-        horarioAtencion: row.horario_atencion || '24 Horas',
-        autorizada: row.autorizada ?? true,
-      }));
-    } catch (err: any) {
-      this.logger.error(`Error inesperado al obtener radiotaxis: ${err.message}`);
-      return RADIOTAXIS_CONTINGENCIA_LIMACHE;
+        const { data, error } = (await Promise.race([
+          fetchPromise,
+          timeoutPromise,
+        ])) as any;
+        clearTimeout(timeoutId!);
+
+        if (error || !data || data.length === 0) {
+          if (error) {
+            this.logger.warn(
+              `Aviso consultando servicio_radiotaxi en Supabase: ${error.message}`,
+            );
+          }
+          resultList = RADIOTAXIS_CONTINGENCIA_LIMACHE;
+        } else {
+          resultList = data.map((row: any) => ({
+            id: row.id_radiotaxi,
+            nombre: row.nombre_central,
+            telefono: row.telefono,
+            telefonoFormateado: row.telefono_formateado || row.telefono,
+            direccionBase: row.direccion_base,
+            tarifaBaseEstimada: row.tarifa_base_estimada || '$2.500 - $3.000',
+            horarioAtencion: row.horario_atencion || '24 Horas',
+            autorizada: row.autorizada ?? true,
+          }));
+        }
+      } catch (err: any) {
+        this.logger.error(`Error inesperado al obtener radiotaxis: ${err.message}`);
+        resultList = RADIOTAXIS_CONTINGENCIA_LIMACHE;
+      }
     }
+
+    if (comuna && comuna.trim()) {
+      const normalizedComuna = comuna.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const filtered = resultList.filter((item) => {
+        const text = `${item.nombre} ${item.direccionBase}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return text.includes(normalizedComuna);
+      });
+      if (filtered.length > 0) {
+        return filtered;
+      }
+    }
+
+    return resultList;
   }
 }

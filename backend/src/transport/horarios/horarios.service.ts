@@ -65,13 +65,71 @@ export class HorariosService {
   }
 
   /**
+   * Entrega un resumen estructurado de las líneas y sus horarios habituales,
+   * permitiendo filtrar por comuna (Quilpué o Villa Alemana).
+   */
+  getLineasResumen(comuna?: string): Array<{ linea: string; recorrido: string; horarios: string; comuna: string }> {
+    const todas = [
+      {
+        linea: 'Línea C02',
+        recorrido: 'Peumo - Villa Alemana - Belloto Norte - Quilpué',
+        horarios: 'Lun a Dom 06:00 - 22:30 hrs (Cada 12-15 min)',
+        comuna: 'Quilpué y Villa Alemana',
+      },
+      {
+        linea: 'Línea 108',
+        recorrido: 'Peñablanca - Peumo - Centro Villa Alemana - Pompeya',
+        horarios: 'Lun a Dom 06:15 - 21:50 hrs (Cada 15 min)',
+        comuna: 'Villa Alemana',
+      },
+      {
+        linea: 'Línea C03',
+        recorrido: 'Los Pinos - Plaza Quilpué - Estación Quilpué',
+        horarios: 'Lun a Dom 06:00 - 22:00 hrs (Cada 10 min)',
+        comuna: 'Quilpué',
+      },
+      {
+        linea: 'Línea 111',
+        recorrido: 'Los Pinos - Hospital de Quilpué - Camino Troncal - Playa Ancha',
+        horarios: 'Lun a Dom 05:30 - 21:30 hrs (Cada 12 min)',
+        comuna: 'Quilpué',
+      },
+      {
+        linea: 'Línea Q02',
+        recorrido: 'Villa Alemana - El Belloto (Feria) - Centro Quilpué - Viña del Mar',
+        horarios: 'Lun a Dom 06:00 - 22:15 hrs (Cada 8-10 min)',
+        comuna: 'Quilpué y Villa Alemana',
+      },
+      {
+        linea: 'Línea 105-D',
+        recorrido: 'Peñablanca - Villa Alemana - Troncal Sur - Plaza Victoria Valparaíso',
+        horarios: 'Lun a Dom 05:45 - 22:00 hrs (Cada 15 min)',
+        comuna: 'Villa Alemana',
+      },
+    ];
+
+    if (!comuna) {
+      return todas;
+    }
+
+    const norm = comuna.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm.includes('villa') || norm.includes('alemana') || norm.includes('peñablanca') || norm.includes('penablanca')) {
+      return todas.filter((l) => l.comuna.includes('Villa Alemana'));
+    }
+    if (norm.includes('quilpue')) {
+      return todas.filter((l) => l.comuna.includes('Quilpué'));
+    }
+    return todas;
+  }
+
+  /**
    * Obtiene los horarios desde Supabase para una línea específica o el general.
    */
   async getHorariosPorLinea(linea?: string): Promise<{ franjas: FranjaHoraria[]; nombreLinea: string; empresa: string }> {
     const defaultRes = {
       franjas: this.defaultHorarios,
-      nombreLinea: linea ? 'Microbuses Agdabus (Limache - Olmué)' : 'Servicio de Microbuses en General (Limache)',
-      empresa: linea ? 'Transporte Público Rural y Urbano' : 'Transporte Público Urbano y Rural',
+      nombreLinea: linea ? `Microbús ${linea} (Quilpué - Villa Alemana)` : 'Servicio de Microbuses en General (Quilpué - Villa Alemana)',
+      empresa: linea ? 'Transporte Metropolitano de Valparaíso' : 'Transporte Público Marga Marga',
     };
 
     if (!this.supabase) {
@@ -95,7 +153,7 @@ export class HorariosService {
         `);
 
       if (linea) {
-        // Formatear búsqueda de línea, por ej. '2' -> 'Línea 02' o '22' -> 'Línea 22'
+        // Formatear búsqueda de línea, por ej. 'C02', '108', '111', 'Q02', '105-D'
         const num = parseInt(linea, 10);
         const padded = !isNaN(num) ? String(num).padStart(2, '0') : linea;
         query = query.or(`id_transporte.ilike.%${padded}%,id_transporte.ilike.%${linea}%`);
@@ -120,13 +178,13 @@ export class HorariosService {
 
       // Mapear franjas
       const franjasMap = new Map<string, FranjaHoraria>();
-      let detectedLinea = linea ? defaultRes.nombreLinea : 'Servicio de Microbuses en General (Limache)';
-      let detectedEmpresa = linea ? defaultRes.empresa : 'Transporte Público Urbano y Rural';
+      let detectedLinea = linea ? defaultRes.nombreLinea : 'Servicio de Microbuses en General (Quilpué - Villa Alemana)';
+      let detectedEmpresa = linea ? defaultRes.empresa : 'Transporte Público Marga Marga';
 
       for (const row of data as any[]) {
         if (linea && row.medio_transporte) {
           const mt = Array.isArray(row.medio_transporte) ? row.medio_transporte[0] : row.medio_transporte;
-          if (mt?.nombre_linea) detectedLinea = `Microbuses ${mt.nombre_linea} (Agdabus)`;
+          if (mt?.nombre_linea) detectedLinea = `Microbús ${mt.nombre_linea}`;
           if (mt?.empresa_operadora) detectedEmpresa = mt.empresa_operadora;
         }
 

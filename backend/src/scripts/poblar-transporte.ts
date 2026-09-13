@@ -43,45 +43,69 @@ export interface HorarioServicioDB {
   activo: boolean;
 }
 
-// Datos de contingencia reales extraídos de la imagen de Agdabus
+// Datos oficiales y de contingencia para Quilpué y Villa Alemana (Moovit / TMV / Fenur)
 const fallbackMedios: MedioTransporte[] = [
-  { id_transporte: 'TRANS-AGDA-01', nombre_linea: 'Línea 01', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-02', nombre_linea: 'Línea 02', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-04', nombre_linea: 'Línea 04', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-08', nombre_linea: 'Línea 08', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-09', nombre_linea: 'Línea 09', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-11', nombre_linea: 'Línea 11', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-12', nombre_linea: 'Línea 12', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-13', nombre_linea: 'Línea 13', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-15', nombre_linea: 'Línea 15', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-21', nombre_linea: 'Línea 21', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-22', nombre_linea: 'Línea 22', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-23', nombre_linea: 'Línea 23', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-24', nombre_linea: 'Línea 24', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-8Y', nombre_linea: 'Línea 8Y', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
-  { id_transporte: 'TRANS-AGDA-22Y', nombre_linea: 'Línea 22Y', tipo_transporte: 'Microbús', empresa_operadora: 'Agdabus Limache', activo: true },
+  { id_transporte: 'TRANS-C02', nombre_linea: 'Línea C02', tipo_transporte: 'Microbús', empresa_operadora: 'Transportes Quilpué - Villa Alemana (TMV)', activo: true },
+  { id_transporte: 'TRANS-108', nombre_linea: 'Línea 108', tipo_transporte: 'Microbús', empresa_operadora: 'Fenur S.A.', activo: true },
+  { id_transporte: 'TRANS-C03', nombre_linea: 'Línea C03', tipo_transporte: 'Microbús', empresa_operadora: 'Transportes Quilpué (TMV)', activo: true },
+  { id_transporte: 'TRANS-111', nombre_linea: 'Línea 111', tipo_transporte: 'Microbús', empresa_operadora: 'Fenur S.A.', activo: true },
+  { id_transporte: 'TRANS-Q02', nombre_linea: 'Línea Q02', tipo_transporte: 'Microbús', empresa_operadora: 'TMV Marga Marga', activo: true },
+  { id_transporte: 'TRANS-105D', nombre_linea: 'Línea 105-D', tipo_transporte: 'Microbús', empresa_operadora: 'Fenur S.A.', activo: true },
 ];
 
 const fallbackRecorridos: RecorridoTransporte[] = [
-  { id_recorrido: 'REC-01', id_transporte: 'TRANS-AGDA-01', nombre_recorrido: 'Lo Narváez', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Ramón de la Cerda, Estación Limache, Av. Eastman, Lo Narváez. Sirve para: Hospital Santo Tomás, Centro comercial Urmeneta, Estación', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-02', id_transporte: 'TRANS-AGDA-02', nombre_recorrido: 'Cajón Grande', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, República, San Francisco, Estación Limache, Av. Eastman, Centro de Olmué, Cajón Grande. Sirve para: Hospital, Eje República, Estación', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-04', id_transporte: 'TRANS-AGDA-04', nombre_recorrido: 'Gabriela', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Serrano, Estación Limache, Av. Eastman, Paradero 34 Gabriela Mistral. Sirve para: Hospital, Centro, Estación', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-08', id_transporte: 'TRANS-AGDA-08', nombre_recorrido: 'Los Laureles', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, República, San Francisco, Limachito, Camino Los Laureles. Sirve para: Limache Viejo, Los Laureles', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-09', id_transporte: 'TRANS-AGDA-09', nombre_recorrido: 'Santa Rosa', sentido: 'Ida y Retorno', calles_principales: 'Estación Limache, Ramón de la Cerda, Urmeneta, República, Palmira Romano Sur, Santa Rosa. Sirve para: Estación, Centro, Hospital, Plaza 40 Horas, Santa Rosa', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-11', id_transporte: 'TRANS-AGDA-11', nombre_recorrido: 'Lliu Lliu', sentido: 'Ida y Retorno', calles_principales: 'Estación Limache, Urmeneta, República, Palmira Romano Sur, Camino Lliu Lliu, Tranque Lliu Lliu. Sirve para: Estación, Hospital, Plaza 40 Horas, Lliu Lliu', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-12', id_transporte: 'TRANS-AGDA-12', nombre_recorrido: 'Los Maitenes', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, República, Colón, Cancha Los Maitenes. Sirve para: Limache Viejo, Los Maitenes', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-13', id_transporte: 'TRANS-AGDA-13', nombre_recorrido: 'La Paloma', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Estación Limache, Camino La Paloma. Sirve para: Hospital, Centro, Estación, La Paloma', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-15', id_transporte: 'TRANS-AGDA-15', nombre_recorrido: 'Limache Urbano directo', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, Urmeneta, Serrano, Ramón de la Cerda, Estación Limache. Sirve para: Conectar directo Limache Viejo, Hospital, Centro, Estación', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-21', id_transporte: 'TRANS-AGDA-21', nombre_recorrido: 'El Almendral', sentido: 'Ida y Retorno', calles_principales: 'Terminal Victoria, Palmira Romano Sur, República, Estación Limache, Av. Eastman, Almendral hacia Cuesta La Dormida. Sirve para: Hospital, Estación, Olmué', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-22', id_transporte: 'TRANS-AGDA-22', nombre_recorrido: 'Camarico', sentido: 'Ida y Retorno', calles_principales: 'Sale de Estación Limache hacia Av. Eastman, Plaza de Olmué, Camarico, La Dormida. Sirve para: Viajes desde la Estación hacia Olmué', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-23', id_transporte: 'TRANS-AGDA-23', nombre_recorrido: 'La Vega', sentido: 'Ida y Retorno', calles_principales: 'Sale de Estación Limache hacia Av. Eastman, Lo Narváez, La Loma de la Vega. Sirve para: Salir de la Estación hacia Olmué rural', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-24', id_transporte: 'TRANS-AGDA-24', nombre_recorrido: 'Las Palmas', sentido: 'Ida y Retorno', calles_principales: 'Sale de Estación Limache hacia Av. Eastman, Granizo, Niño Dios de Las Palmas. Sirve para: Salir de la Estación hacia Las Palmas', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-8Y', id_transporte: 'TRANS-AGDA-8Y', nombre_recorrido: 'Tabolango', sentido: 'Ida y Retorno', calles_principales: 'Estación Limache, Urmeneta, Palmira Romano Sur, Ruta 60-CH, Tabolango. Sirve para: Hospital, Centro, Tabolango', frecuencia: 'Regular' },
-  { id_recorrido: 'REC-22Y', id_transporte: 'TRANS-AGDA-22Y', nombre_recorrido: 'Ramayana', sentido: 'Ida y Retorno', calles_principales: 'Sale de Estación Limache hacia Av. Eastman, Ramayana, Km 22 Cuesta La Dormida. Sirve para: Salir de la Estación hacia Olmué alto', frecuencia: 'Regular' },
+  {
+    id_recorrido: 'REC-C02',
+    id_transporte: 'TRANS-C02',
+    nombre_recorrido: 'Peumo - Villa Alemana - Belloto Norte - Quilpué',
+    sentido: 'Ida y Retorno',
+    calles_principales: 'Sector Peumo, Fundo El Litre, Estación Metro Villa Alemana, Eje Comercial Av. Valparaíso, Belloto Norte, Estación Quilpué. Sirve para: Peumo, Fundo El Litre, Estación Metro Villa Alemana, Eje Comercial Av. Valparaíso, Belloto Norte, Quilpué, Centro',
+    frecuencia: 'Regular',
+  },
+  {
+    id_recorrido: 'REC-108',
+    id_transporte: 'TRANS-108',
+    nombre_recorrido: 'Peumo / Peñablanca - Mena - Pompeya',
+    sentido: 'Ida y Retorno',
+    calles_principales: 'Sectores altos de Peñablanca, Peumo, Centro de Villa Alemana, Av. Valparaíso, Mena, Pompeya, Avenidas comerciales. Sirve para: Peñablanca, Peumo, Centro de Villa Alemana, Pompeya, Comercio, Mena',
+    frecuencia: 'Regular',
+  },
+  {
+    id_recorrido: 'REC-C03',
+    id_transporte: 'TRANS-C03',
+    nombre_recorrido: 'Los Pinos - Estación Quilpué',
+    sentido: 'Ida y Retorno',
+    calles_principales: 'Sector residencial Los Pinos, Vicuña Mackenna, Plaza de Quilpué, Centro comercial Quilpué, Estación Metro Quilpué. Sirve para: Los Pinos, Plaza de Quilpué, Vicuña Mackenna, Estación Metro Quilpué, Centro, Trámites y Comercio',
+    frecuencia: 'Frecuencia continua',
+  },
+  {
+    id_recorrido: 'REC-111',
+    id_transporte: 'TRANS-111',
+    nombre_recorrido: 'Los Pinos - Hospital - Peyronet - Playa Ancha',
+    sentido: 'Ida y Retorno',
+    calles_principales: 'Los Pinos, Hospital de Quilpué, Centro Comercial Quilpué, Arterias principales Peyronet, Camino Troncal, Viña del Mar, Playa Ancha. Sirve para: Los Pinos, Hospital de Quilpué, Centro comercial, Salud, Traslados hacia la costa',
+    frecuencia: 'Regular',
+  },
+  {
+    id_recorrido: 'REC-Q02',
+    id_transporte: 'TRANS-Q02',
+    nombre_recorrido: 'Villa Alemana - Quilpué - Viña del Mar',
+    sentido: 'Ida y Retorno',
+    calles_principales: 'Eje troncal principal, Camino Troncal, Av. Los Carrera, Av. Valparaíso, Centro de Villa Alemana, El Belloto (zona comercial y feria), Centro de Quilpué, Viña del Mar. Sirve para: Centro Villa Alemana, El Belloto, Feria El Belloto, Av. Los Carrera, Centro de Quilpué, Viña del Mar, Costa',
+    frecuencia: 'Frecuencia alta',
+  },
+  {
+    id_recorrido: 'REC-105D',
+    id_transporte: 'TRANS-105D',
+    nombre_recorrido: 'Peñablanca - Troncal Sur - Plaza Victoria',
+    sentido: 'Ida y Retorno',
+    calles_principales: 'Peñablanca, Centro Villa Alemana, Vía expresa Troncal Sur, Puntos neurálgicos de transbordo rápido, Viña del Mar, Plaza Victoria Valparaíso. Sirve para: Peñablanca, Centro Villa Alemana, Troncal Sur, Transbordo rápido, Plaza Victoria, Valparaíso',
+    frecuencia: 'Regular',
+  },
 ];
 
 /**
- * Generación de horarios oficiales para el 100% de las líneas de Agdabus Limache
+ * Generación de horarios oficiales para las líneas de Quilpué y Villa Alemana
  */
 function generarHorariosOficiales(): HorarioServicioDB[] {
   // Matriz de horarios diferenciados por tipo de recorrido/línea
@@ -90,33 +114,24 @@ function generarHorariosOficiales(): HorarioServicioDB[] {
     sab: [string, string];
     dom: [string, string];
   }> = {
-    'TRANS-AGDA-01': { sem: ['06:30', '21:00'], sab: ['07:00', '20:30'], dom: ['07:30', '20:00'] },
-    'TRANS-AGDA-02': { sem: ['06:40', '21:10'], sab: ['07:15', '20:30'], dom: ['07:45', '20:00'] },
-    'TRANS-AGDA-04': { sem: ['06:45', '21:00'], sab: ['07:15', '20:15'], dom: ['07:45', '19:45'] },
-    'TRANS-AGDA-08': { sem: ['06:40', '20:45'], sab: ['07:20', '20:00'], dom: ['08:00', '19:30'] },
-    'TRANS-AGDA-09': { sem: ['06:30', '21:15'], sab: ['07:00', '20:30'], dom: ['07:30', '20:00'] },
-    'TRANS-AGDA-11': { sem: ['06:50', '20:30'], sab: ['07:30', '20:00'], dom: ['08:00', '19:00'] },
-    'TRANS-AGDA-12': { sem: ['06:45', '20:45'], sab: ['07:15', '20:15'], dom: ['07:45', '19:30'] },
-    'TRANS-AGDA-13': { sem: ['06:50', '20:30'], sab: ['07:30', '20:00'], dom: ['08:00', '19:00'] },
-    'TRANS-AGDA-15': { sem: ['06:30', '21:30'], sab: ['07:00', '21:00'], dom: ['07:30', '20:30'] },
-    'TRANS-AGDA-21': { sem: ['06:20', '21:15'], sab: ['06:50', '20:45'], dom: ['07:20', '20:00'] },
-    'TRANS-AGDA-22': { sem: ['06:15', '21:30'], sab: ['06:45', '21:00'], dom: ['07:15', '20:30'] },
-    'TRANS-AGDA-23': { sem: ['06:30', '21:00'], sab: ['07:00', '20:30'], dom: ['07:30', '20:00'] },
-    'TRANS-AGDA-24': { sem: ['06:30', '21:00'], sab: ['07:00', '20:30'], dom: ['07:30', '20:00'] },
-    'TRANS-AGDA-8Y': { sem: ['06:50', '20:30'], sab: ['07:30', '20:00'], dom: ['08:00', '19:00'] },
-    'TRANS-AGDA-22Y': { sem: ['06:20', '21:15'], sab: ['06:50', '20:45'], dom: ['07:20', '20:00'] },
+    'TRANS-C02': { sem: ['06:00', '22:30'], sab: ['06:30', '22:00'], dom: ['07:00', '21:30'] },
+    'TRANS-108': { sem: ['06:15', '21:50'], sab: ['06:45', '21:30'], dom: ['07:15', '21:00'] },
+    'TRANS-C03': { sem: ['05:45', '23:00'], sab: ['06:15', '22:45'], dom: ['06:45', '22:00'] },
+    'TRANS-111': { sem: ['06:00', '22:00'], sab: ['06:30', '21:45'], dom: ['07:00', '21:15'] },
+    'TRANS-Q02': { sem: ['05:30', '23:15'], sab: ['06:00', '23:00'], dom: ['06:30', '22:30'] },
+    'TRANS-105D': { sem: ['06:00', '22:30'], sab: ['06:30', '22:00'], dom: ['07:00', '21:30'] },
   };
 
   const listaHorarios: HorarioServicioDB[] = [];
 
   for (const medio of fallbackMedios) {
     const config = configHorariosPorLinea[medio.id_transporte] || {
-      sem: ['06:30', '21:00'],
-      sab: ['07:00', '20:30'],
-      dom: ['07:30', '20:00'],
+      sem: ['06:00', '22:30'],
+      sab: ['06:30', '22:00'],
+      dom: ['07:00', '21:30'],
     };
 
-    const codigoLinea = medio.id_transporte.replace('TRANS-AGDA-', '');
+    const codigoLinea = medio.id_transporte.replace('TRANS-', '');
 
     listaHorarios.push(
       {
@@ -155,10 +170,10 @@ function generarHorariosOficiales(): HorarioServicioDB[] {
 const fallbackHorarios: HorarioServicioDB[] = generarHorariosOficiales();
 
 /**
- * Función para obtener datos de un endpoint (Simulación de Moovit/EFE)
+ * Función para obtener datos de un endpoint (Simulación de Moovit para Quilpué / Villa Alemana)
  */
 async function fetchTransportData() {
-  const endpointMoovit = 'https://api.moovitapp.com/v2/lines'; // URL de ejemplo, se debe reemplazar por la real interceptada
+  const endpointMoovit = 'https://moovitapp.com/tripplan/valparaiso_y_vina_del_mar-3121/lines/es?ref=16&customerId=4908'; // URL de ejemplo, se debe reemplazar por la real interceptada
   
   try {
     console.log(`Intentando obtener datos de ${endpointMoovit}...`);

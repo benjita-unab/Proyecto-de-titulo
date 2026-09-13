@@ -66,7 +66,7 @@ describe('ChatController', () => {
     it('should return schedule information and showHorarios flag when asking for horarios', async () => {
       const response = await controller.handleChat('¿Cuáles son los horarios de los buses?', '2026-09-09T14:30:00');
       expect(response.showHorarios).toBe(true);
-      expect(response.text).toContain('Horarios de Operación - Micros Limache');
+      expect(response.text).toContain('Horarios de Operación');
       expect(response.horarios).toBeDefined();
       expect(response.horarios.status).toBe('EN_SERVICIO');
       expect(response.text).not.toContain('Disculpa, no alcancé a entender');
@@ -75,7 +75,7 @@ describe('ChatController', () => {
     it('should return radiotaxi contacts and showRadioTaxis flag when asking for radio taxi', async () => {
       const response = await controller.handleChat('¿Cuáles son los números de radio taxi?');
       expect(response.showRadioTaxis).toBe(true);
-      expect(response.text).toContain('centrales de Radio Taxi autorizadas en Limache');
+      expect(response.text).toContain('centrales de Radio Taxi autorizadas');
       expect(response.taxis).toBeDefined();
       expect(Array.isArray(response.taxis)).toBe(true);
       expect(response.taxis.length).toBeGreaterThanOrEqual(2);
@@ -84,7 +84,7 @@ describe('ChatController', () => {
 
     it('should return a friendly welcome message when greeting with "hola bot"', async () => {
       const response = await controller.handleChat('hola bot');
-      expect(response.text).toContain('¡Hola! Te damos la bienvenida a Movitech Limache');
+      expect(response.text).toContain('¡Hola! Te damos la bienvenida a MoviTech');
       expect(response.text).toContain('asistente de movilidad');
       expect(response.text).not.toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir');
     });
