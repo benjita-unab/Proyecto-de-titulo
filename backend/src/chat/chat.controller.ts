@@ -1,9 +1,10 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Optional } from '@nestjs/common';
 import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
 import { TaxisService } from '../transport/taxis/taxis.service';
 import { FormatterService } from '../formatter/formatter.service';
+import { ComparativeFlowService } from './comparative-flow.service';
 
 @Controller('api/chat')
 export class ChatController {
@@ -13,15 +14,28 @@ export class ChatController {
     private readonly horariosService: HorariosService,
     private readonly taxisService: TaxisService,
     private readonly formatterService: FormatterService,
+    @Optional() private readonly comparativeFlowService?: ComparativeFlowService,
   ) {}
 
   @Post()
   async handleChat(
     @Body('text') text: string,
     @Body('clientTime') clientTime?: string,
+    @Body('userId') userId?: string,
+    @Body('comparative') comparative?: boolean,
   ) {
     if (!text) {
       return { text: 'No he recibido ningún texto.' };
+    }
+
+    const currentUserId = userId || 'default_user';
+
+    // HU #2: Verificar si el usuario está enviando una selección interactiva (1, 2, 3 o nombres)
+    if (this.comparativeFlowService && /^(1|2|3|micro|colectivo|taxi|opt_)/i.test(text.trim())) {
+      const selection = await this.comparativeFlowService.processSelection(currentUserId, text);
+      if (selection) {
+        return selection.web;
+      }
     }
 
     const queryResult = this.nlpService.processQuery(text);
@@ -56,10 +70,34 @@ export class ChatController {
     }
 
     if (intent === 'Buscar Ruta' && destination) {
+      // Si se solicita explícitamente modo comparativo de 3 modalidades
+      if (comparative && this.comparativeFlowService) {
+        const comparativeResult = await this.comparativeFlowService.generateComparativeSummary(
+          currentUserId,
+          destination,
+        );
+        return comparativeResult.webResponse;
+      }
+
       const routes = await this.rutasService.getRoutesForDestination(destination);
       return this.formatterService.formatRouteResponse(destination, routes);
     }
 
     return this.formatterService.formatRouteResponse('', []);
+  }
+
+  /**
+   * Endpoint directo para solicitar comparativo visual de 3 modalidades (HU #2 Tarea 2)
+   */
+  @Post('comparative')
+  async getComparative(
+    @Body('destination') destination: string,
+    @Body('userId') userId?: string,
+  ) {
+    if (!destination || !this.comparativeFlowService) {
+      return { text: 'Por favor indica un destino para comparar transportes.' };
+    }
+    const currentUserId = userId || 'default_user';
+    return this.comparativeFlowService.generateComparativeSummary(currentUserId, destination);
   }
 }
