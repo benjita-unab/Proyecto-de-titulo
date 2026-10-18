@@ -61,4 +61,64 @@ export class FormatterService {
       },
     };
   }
+
+  /**
+   * Tarea 4 (HU #5) y Tarea 1 (HU #2): Estructura visual del comparativo de las 3 modalidades
+   * Bloques cortos (máx 3 líneas), negritas semánticas, emojis y 3 opciones interactivas.
+   */
+  formatComparativeResponse(
+    destination: string,
+    data: {
+      microbus?: { lineas: string; tarifaGeneral: string; tarifaAdultoMayor: string; frecuencia: string };
+      colectivo?: { lineas: string; tarifaGeneral: string; tarifaAdultoMayor: string; frecuencia: string };
+      radiotaxi?: { centrales: string; tarifaBase: string; tiempoEspera: string };
+    },
+  ) {
+    let text = `🧭 *Opciones de transporte para llegar a ${destination}:*\n\n`;
+
+    // Bloque 1: Microbuses
+    const mb = data.microbus || {
+      lineas: 'Líneas C02, 108, 111, Q02',
+      tarifaGeneral: '$350 - $450',
+      tarifaAdultoMayor: '$150',
+      frecuencia: 'Cada 10-15 min',
+    };
+    text += `🚌 *1. Microbús (${mb.lineas})*\n`;
+    text += `💰 Adulto mayor: *${mb.tarifaAdultoMayor}* | General: ${mb.tarifaGeneral}\n`;
+    text += `⏱️ Frecuencia: ${mb.frecuencia} | Rampa de acceso\n\n`;
+
+    // Bloque 2: Colectivos (Tercera modalidad - HU #5)
+    const col = data.colectivo || {
+      lineas: 'Líneas 1, 2, 3, 4',
+      tarifaGeneral: '$850',
+      tarifaAdultoMayor: '$600',
+      frecuencia: 'Cada 4-6 min',
+    };
+    text += `🚕 *2. Colectivo (${col.lineas})*\n`;
+    text += `💰 Adulto mayor: *${col.tarifaAdultoMayor}* | General: ${col.tarifaGeneral}\n`;
+    text += `⏱️ Frecuencia: ${col.frecuencia} | Parada a solicitud\n\n`;
+
+    // Bloque 3: Radiotaxis
+    const tx = data.radiotaxi || {
+      centrales: 'Taxiexpress, Aracis Vía, C&B',
+      tarifaBase: '$2.500 - $3.200',
+      tiempoEspera: 'Inmediato / Domicilio',
+    };
+    text += `🚖 *3. Radio Taxi Directo (${tx.centrales})*\n`;
+    text += `💰 Tarifa estimada: *${tx.tarifaBase}*\n`;
+    text += `📞 Servicio puerta a puerta | 24 Horas\n\n`;
+
+    text += `👇 *¿Cuál medio prefieres usar hoy?*\n`;
+    text += `Responde *1* para Micro, *2* para Colectivo o *3* para Radio Taxi.`;
+
+    return {
+      text,
+      destination,
+      options: [
+        { id: 'opt_micro', label: '1. Microbús 🚌', tipo: 'microbus' },
+        { id: 'opt_colectivo', label: '2. Colectivo 🚕', tipo: 'colectivo' },
+        { id: 'opt_taxi', label: '3. Radio Taxi 🚖', tipo: 'radiotaxi' },
+      ],
+    };
+  }
 }
