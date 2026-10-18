@@ -284,5 +284,114 @@ export class TelegramFormatterService {
       parse_mode: 'HTML',
     };
   }
+
+  /**
+   * Tarea 4 (HU #5) y Tarea 1 (HU #2): Formato comparativo de 3 modalidades para Telegram
+   * Respeta límites para adultos mayores: bloques de máx 3 líneas, emojis, tarifas y teclado de botones.
+   */
+  public formatComparativeResponse(
+    destination: string,
+    data?: {
+      microbus?: { lineas: string; tarifaGeneral: string; tarifaAdultoMayor: string; frecuencia: string };
+      colectivo?: { lineas: string; tarifaGeneral: string; tarifaAdultoMayor: string; frecuencia: string };
+      radiotaxi?: { centrales: string; tarifaBase: string; tiempoEspera: string };
+    },
+    parseMode: 'HTML' | 'Markdown' = 'HTML',
+  ): TelegramFormattedResponse & { reply_markup?: any } {
+    const destClean = this.escapeHtml(destination);
+    const mb = data?.microbus || {
+      lineas: 'Líneas C02, 108, 111, Q02',
+      tarifaGeneral: '$350 - $450',
+      tarifaAdultoMayor: '$150',
+      frecuencia: 'Cada 10-15 min',
+    };
+    const col = data?.colectivo || {
+      lineas: 'Líneas 1, 2, 3, 4',
+      tarifaGeneral: '$850',
+      tarifaAdultoMayor: '$600',
+      frecuencia: 'Cada 4-6 min',
+    };
+    const tx = data?.radiotaxi || {
+      centrales: 'Taxiexpress, Aracis Vía, C&B',
+      tarifaBase: '$2.500 - $3.200',
+      tiempoEspera: 'Inmediato / Domicilio',
+    };
+
+    let text = `🧭 <b>OPCIONES DE TRANSPORTE A: ${destClean.toUpperCase()}</b>\n`;
+    text += `───────────────────────\n\n`;
+
+    text += `🚌 <b>1. MICROBÚS (${this.escapeHtml(mb.lineas)})</b>\n`;
+    text += `💰 Adulto Mayor: <b>${this.escapeHtml(mb.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(mb.tarifaGeneral)}\n`;
+    text += `⏱️ Frecuencia: ${this.escapeHtml(mb.frecuencia)} | Rampa accesible\n\n`;
+
+    text += `🚕 <b>2. COLECTIVO (${this.escapeHtml(col.lineas)})</b>\n`;
+    text += `💰 Adulto Mayor: <b>${this.escapeHtml(col.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(col.tarifaGeneral)}\n`;
+    text += `⏱️ Frecuencia: ${this.escapeHtml(col.frecuencia)} | Parada a solicitud\n\n`;
+
+    text += `🚖 <b>3. RADIO TAXI (${this.escapeHtml(tx.centrales)})</b>\n`;
+    text += `💰 Tarifa estimada: <b>${this.escapeHtml(tx.tarifaBase)}</b>\n`;
+    text += `📞 Directo a domicilio | Disponible 24 Horas\n\n`;
+
+    text += `👇 <b>Toca una opción o escribe 1, 2 o 3 para ver detalles y paradas:</b>`;
+
+    const inlineKeyboard = {
+      inline_keyboard: [
+        [
+          { text: '🚌 1. Ver Micros', callback_data: `sel_micro_${destination.substring(0, 20)}` },
+          { text: '🚕 2. Ver Colectivos', callback_data: `sel_col_${destination.substring(0, 20)}` },
+        ],
+        [
+          { text: '🚖 3. Ver Radio Taxis', callback_data: `sel_taxi_${destination.substring(0, 20)}` },
+        ],
+      ],
+    };
+
+    return {
+      text,
+      parse_mode: 'HTML',
+      reply_markup: inlineKeyboard,
+    };
+  }
+
+  /**
+   * Formatea la respuesta de detalle para la modalidad Colectivo (HU #5)
+   */
+  public formatColectivosResponse(
+    destination: string,
+    colectivos: any[],
+  ): TelegramFormattedResponse {
+    const destClean = this.escapeHtml(destination);
+    if (!colectivos || colectivos.length === 0) {
+      return {
+        text: `🚕 <b>Líneas de Colectivos hacia ${destClean.toUpperCase()}</b>\n\nNo se encontraron colectivos directos en este momento. Te recomendamos consultar las opciones de microbuses o radiotaxis.`,
+        parse_mode: 'HTML',
+      };
+    }
+
+    let text = `🚕 <b>LÍNEAS DE COLECTIVOS A: ${destClean.toUpperCase()}</b>\n`;
+    text += `───────────────────────\n\n`;
+
+    colectivos.slice(0, 3).forEach((col, idx) => {
+      const nombre = this.escapeHtml(col.numeroLinea || col.nombreLinea);
+      const recorrido = this.escapeHtml(col.trazadoIda || col.destino);
+      const freq = col.frecuenciaMinutos ? `Cada ${col.frecuenciaMinutos} min` : 'Alta frecuencia';
+      const tarifaAM = col.tarifaAdultoMayor ? `$${col.tarifaAdultoMayor}` : '$600';
+      const tarifaGral = col.tarifaDiurna ? `$${col.tarifaDiurna}` : '$850';
+
+      text += `<b>${idx + 1}. 🚕 ${nombre}</b>\n`;
+      text += `   📍 <b>Recorrido:</b> ${recorrido}\n`;
+      text += `   ⏱️ <b>Frecuencia:</b> ${freq} (06:00 a 22:30 hrs)\n`;
+      text += `   💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAM} | General: ${tarifaGral}\n\n`;
+    });
+
+    const encodedDest = encodeURIComponent(`${destination} Quilpue`);
+    text += `🗺️ <a href="https://www.google.com/maps/dir/?api=1&amp;destination=${encodedDest}&amp;travelmode=transit">Ver paradas cercanas en Google Maps</a>\n\n`;
+    text += `💡 <i>Tip MoviTech: Los colectivos pueden dejarte a solicitud en la esquina más cercana a tu destino.</i>`;
+
+    return {
+      text,
+      parse_mode: 'HTML',
+    };
+  }
 }
 
