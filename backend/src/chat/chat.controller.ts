@@ -1,10 +1,11 @@
-import { Controller, Post, Body, Optional } from '@nestjs/common';
+import { Controller, Post, Body, Optional, BadRequestException } from '@nestjs/common';
 import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
 import { TaxisService } from '../transport/taxis/taxis.service';
 import { FormatterService } from '../formatter/formatter.service';
 import { ComparativeFlowService } from './comparative-flow.service';
+import { HaversineService } from '../transport/geo/haversine.service';
 
 @Controller('api/chat')
 export class ChatController {
@@ -15,6 +16,7 @@ export class ChatController {
     private readonly taxisService: TaxisService,
     private readonly formatterService: FormatterService,
     @Optional() private readonly comparativeFlowService?: ComparativeFlowService,
+    @Optional() private readonly haversineService?: HaversineService,
   ) {}
 
   @Post()
@@ -99,5 +101,46 @@ export class ChatController {
     }
     const currentUserId = userId || 'default_user';
     return this.comparativeFlowService.generateComparativeSummary(currentUserId, destination);
+  }
+
+  /**
+   * Tarea 6 (HU #3): Endpoint seguro para recibir, parsear y validar eventos de ubicación GPS
+   * Retorna la parada o punto seguro más cercano en <= 1.5s (CA de HU #3).
+   */
+  @Post('location')
+  async handleLocation(
+    @Body('latitude') latitude: number,
+    @Body('longitude') longitude: number,
+    @Body('destination') destination?: string,
+    @Body('forTaxi') forTaxi?: boolean,
+  ) {
+    if (!this.haversineService) {
+      return { text: 'Servicio geoespacial no disponible temporalmente.' };
+    }
+
+    if (!this.haversineService.validateCoordinates(latitude, longitude)) {
+      throw new BadRequestException('Coordenadas geográficas inválidas o fuera de rango permitido.');
+    }
+
+    if (forTaxi) {
+      const safePoint = await this.haversineService.findClosestStop(latitude, longitude, {
+        soloPuntosSeguros: true,
+      });
+      const taxis = await this.taxisService.getCentralesRadioTaxi();
+      if (!safePoint) {
+        return { text: 'No pudimos localizar un punto seguro en las inmediaciones.' };
+      }
+      return this.formatterService.formatRadioTaxiWithSafePoint(safePoint, taxis);
+    }
+
+    const stopResult = await this.haversineService.findClosestStop(latitude, longitude, {
+      radioInicialMetros: 500,
+    });
+
+    if (!stopResult) {
+      return { text: 'No encontramos paradas cercanas a tu ubicación actual.' };
+    }
+
+    return this.formatterService.formatNearbyStopResponse(stopResult, destination);
   }
 }

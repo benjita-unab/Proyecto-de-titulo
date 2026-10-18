@@ -22,6 +22,7 @@
     "db:populate-horarios": "ts-node --transpile-only src/scripts/poblar-horarios.ts",
     "db:populate-radiotaxis": "ts-node --transpile-only src/scripts/poblar-radiotaxis.ts",
     "db:populate-colectivos": "ts-node --transpile-only src/scripts/poblar-colectivos.ts",
+    "db:populate-paradas": "ts-node --transpile-only src/scripts/poblar-paradas.ts",
     "db:clean": "ts-node --transpile-only src/scripts/limpiar-transporte.ts",
     "scrape:tarifas": "ts-node --transpile-only src/scripts/extraer-tarifas-puppeteer.ts"
   },
