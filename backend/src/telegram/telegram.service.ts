@@ -14,6 +14,8 @@ import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
 import { TaxisService } from '../transport/taxis/taxis.service';
+import { HaversineService } from '../transport/geo/haversine.service';
+import { ComparativeFlowService } from '../chat/comparative-flow.service';
 
 @Injectable()
 export class TelegramService {
@@ -30,6 +32,8 @@ export class TelegramService {
     @Optional() private readonly horariosService?: HorariosService,
     @Optional() private readonly taxisService?: TaxisService,
     @Optional() private readonly audioTranscriptionService?: AudioTranscriptionService,
+    @Optional() private readonly haversineService?: HaversineService,
+    @Optional() private readonly comparativeFlowService?: ComparativeFlowService,
   ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN') || '';
     this.webhookSecret =
@@ -76,6 +80,24 @@ export class TelegramService {
   public extractIncomingMessage(
     update: TelegramUpdate,
   ): ParsedTelegramMessage | null {
+    // 0. Detección de callback_query por clics en botones inline (HU #2 Tarea 5)
+    if (update?.callback_query) {
+      const cb = update.callback_query;
+      const senderName =
+        [cb.from?.first_name, cb.from?.last_name].filter(Boolean).join(' ') || 'Usuario';
+      const targetChatId = cb.message?.chat?.id || cb.from?.id;
+      return {
+        chatId: targetChatId,
+        text: cb.data || '',
+        messageId: cb.message?.message_id || 0,
+        senderName,
+        username: cb.from?.username,
+        date: Math.floor(Date.now() / 1000),
+        isVoice: false,
+        callbackData: cb.data,
+      };
+    }
+
     const rawMessage = update?.message || update?.edited_message;
 
     if (!rawMessage || !rawMessage.chat) {
@@ -86,7 +108,21 @@ export class TelegramService {
       .filter(Boolean)
       .join(' ') || 'Usuario';
 
-    // 1. Detección de notas de voz o archivos de audio (msg.voice o msg.audio)
+    // 1. Detección de eventos de ubicación GPS compartida (HU #3 Tarea 6)
+    if (rawMessage.location) {
+      return {
+        chatId: rawMessage.chat.id,
+        text: '',
+        messageId: rawMessage.message_id,
+        senderName,
+        username: rawMessage.from?.username,
+        date: rawMessage.date,
+        isVoice: false,
+        location: rawMessage.location,
+      };
+    }
+
+    // 2. Detección de notas de voz o archivos de audio (msg.voice o msg.audio)
     const voiceObj = rawMessage.voice || rawMessage.audio;
     if (voiceObj && voiceObj.file_id) {
       const captionText =
@@ -105,7 +141,7 @@ export class TelegramService {
       };
     }
 
-    // 2. Mensaje de texto directo o subtítulo/caption
+    // 3. Mensaje de texto directo o subtítulo/caption
     const rawText = typeof rawMessage.text === 'string' ? rawMessage.text : rawMessage.caption;
     if (typeof rawText === 'string') {
       const trimmedText = rawText.trim();
@@ -122,7 +158,7 @@ export class TelegramService {
       }
     }
 
-    // 3. Objeto de voz/audio sin file_id
+    // 4. Objeto de voz/audio sin file_id
     if (rawMessage.voice || rawMessage.audio) {
       return {
         chatId: rawMessage.chat.id,
@@ -195,6 +231,48 @@ export class TelegramService {
         text: '[Nota de voz sin archivo]',
         sent,
       };
+    }
+
+    // HU #2 Tarea 5: Manejo de clics en botones de Inline Keyboard (Microbús, Colectivo, Radio Taxi)
+    if (parsed.callbackData && this.comparativeFlowService) {
+      this.logger.log(`[Telegram Callback] Selección recibida de ${parsed.senderName}: "${parsed.callbackData}"`);
+      const selection = await this.comparativeFlowService.processSelection(
+        parsed.chatId.toString(),
+        parsed.callbackData,
+      );
+      if (selection) {
+        const sent = await this.sendMessage(parsed.chatId, selection.telegram.text, 'HTML');
+        return {
+          processed: true,
+          chatId: parsed.chatId,
+          text: parsed.callbackData,
+          sent,
+        };
+      }
+    }
+
+    // HU #3 Tarea 6: Manejo de ubicación compartida por GPS
+    if (parsed.location && this.haversineService && this.telegramFormatter) {
+      const { latitude, longitude } = parsed.location;
+      this.logger.log(`[Telegram Location] Ubicación recibida de ${parsed.senderName}: (${latitude}, ${longitude})`);
+
+      if (!this.haversineService.validateCoordinates(latitude, longitude)) {
+        const invalidMsg =
+          `⚠️ <b>Ubicación fuera de rango</b>\n\n` +
+          `No pudimos procesar las coordenadas recibidas. Por favor asegúrate de compartir tu ubicación dentro de la zona de Quilpué y Villa Alemana.`;
+        const sent = await this.sendMessage(parsed.chatId, invalidMsg, 'HTML');
+        return { processed: true, chatId: parsed.chatId, sent };
+      }
+
+      const closest = await this.haversineService.findClosestStop(latitude, longitude, {
+        radioInicialMetros: 500,
+      });
+
+      if (closest) {
+        const formatted = this.telegramFormatter.formatNearbyStopResponse(closest);
+        const sent = await this.sendMessage(parsed.chatId, formatted.text, 'HTML');
+        return { processed: true, chatId: parsed.chatId, sent };
+      }
     }
 
     this.logger.log(
@@ -339,6 +417,7 @@ export class TelegramService {
     chatId: number,
     text: string,
     parseMode: 'HTML' | 'Markdown' | 'MarkdownV2' = 'HTML',
+    replyMarkup?: any,
   ): Promise<boolean> {
     if (!this.botToken) {
       this.logger.error('No se puede enviar mensaje: TELEGRAM_BOT_TOKEN no definido.');
@@ -346,11 +425,17 @@ export class TelegramService {
     }
 
     try {
-      const response = await axios.post(`${this.telegramApiUrl}/sendMessage`, {
+      const payload: any = {
         chat_id: chatId,
         text,
         parse_mode: parseMode,
-      });
+      };
+
+      if (replyMarkup) {
+        payload.reply_markup = replyMarkup;
+      }
+
+      const response = await axios.post(`${this.telegramApiUrl}/sendMessage`, payload);
 
       return response.data?.ok === true;
     } catch (error: any) {

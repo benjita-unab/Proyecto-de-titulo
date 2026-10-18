@@ -393,5 +393,61 @@ export class TelegramFormatterService {
       parse_mode: 'HTML',
     };
   }
+
+  /**
+   * Tarea 1 (HU #3): Tarjeta enriquecida para Telegram de parada más cercana
+   */
+  public formatNearbyStopResponse(
+    paradaResult: any,
+    destination?: string,
+  ): TelegramFormattedResponse {
+    const p = paradaResult.parada;
+    const destSafe = destination ? ` hacia ${this.escapeHtml(destination)}` : '';
+    const avisoAmpliado = paradaResult.radioAmpliado
+      ? `\nℹ️ <i>Ampliamos la búsqueda a ${paradaResult.distanciaMetros}m para encontrar la opción más accesible.</i>\n`
+      : '';
+
+    let text = `📍 <b>PARADA MÁS CERCANA${destSafe.toUpperCase()}</b>\n`;
+    text += `───────────────────────\n\n`;
+    text += `🚏 <b>${this.escapeHtml(p.nombre)}</b>\n`;
+    text += `🚶‍♂️ <b>Distancia:</b> A ${paradaResult.distanciaMetros} metros de tu ubicación\n`;
+    text += `🏠 <b>Dirección:</b> ${this.escapeHtml(p.direccion)}\n`;
+    text += `🚌 <b>Servicios que pasan por aquí:</b> ${this.escapeHtml(p.lineasAsociadas || 'Microbuses y Colectivos')}\n`;
+    text += avisoAmpliado + '\n';
+    text += `🗺️ <a href="${paradaResult.googleMapsDirectionsUrl}">Abrir ruta a pie en Google Maps</a>\n\n`;
+    text += `💡 <i>Tip: Toca el enlace para abrir directamente tu app de mapas con la ruta caminable paso a paso.</i>`;
+
+    return {
+      text,
+      parse_mode: 'HTML',
+    };
+  }
+
+  /**
+   * Tarea 7 (HU #3): Punto seguro de espera para Radiotaxis en Telegram
+   */
+  public formatRadioTaxiWithSafePoint(
+    safePointResult: any,
+    taxis: any[],
+  ): TelegramFormattedResponse {
+    const sp = safePointResult.parada;
+    let text = `🚖 <b>PUNTO SEGURO DE ESPERA RECOMENDADO</b>\n`;
+    text += `───────────────────────\n\n`;
+    text += `🛡️ <b>${this.escapeHtml(sp.nombre)}</b>\n`;
+    text += `📍 <b>Ubicación:</b> ${this.escapeHtml(sp.direccion)} (a ${safePointResult.distanciaMetros}m de ti)\n`;
+    text += `🗺️ <a href="${safePointResult.googleMapsUrl}">Ver punto de encuentro en Google Maps</a>\n\n`;
+    text += `📞 <b>Centrales oficiales autorizadas para solicitar tu móvil:</b>\n`;
+
+    taxis.slice(0, 3).forEach((t, i) => {
+      const telClean = t.telefono.replace(/[^\d+]/g, '');
+      text += `<b>${i + 1}. ${this.escapeHtml(t.nombre)}</b>\n`;
+      text += `   📲 <a href="tel:${telClean}">${this.escapeHtml(t.telefonoFormateado)}</a> (Tarifa: ${this.escapeHtml(t.tarifaBaseEstimada)})\n`;
+    });
+
+    return {
+      text,
+      parse_mode: 'HTML',
+    };
+  }
 }
 

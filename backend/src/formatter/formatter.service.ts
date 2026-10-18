@@ -121,4 +121,55 @@ export class FormatterService {
       ],
     };
   }
+
+  /**
+   * Tarea 1 (HU #3): Tarjeta visual enriquecida para parada más cercana
+   * Despliega la parada cercana, distancia exacta en metros y enlace a mapa nativo.
+   */
+  formatNearbyStopResponse(paradaResult: any, destination?: string) {
+    const p = paradaResult.parada;
+    const destText = destination ? ` hacia ${destination}` : '';
+    const advertenciaRadio = paradaResult.radioAmpliado
+      ? `\nℹ️ *Nota:* No encontramos paradas a menos de 500m. Te sugerimos el punto más accesible a ${paradaResult.distanciaMetros} metros.`
+      : '';
+
+    let text = `📍 *Parada más cercana${destText}:*\n\n`;
+    text += `🚏 *${p.nombre}*\n`;
+    text += `🚶‍♂️ *Distancia:* A ${paradaResult.distanciaMetros} metros de tu ubicación\n`;
+    text += `🏠 *Dirección:* ${p.direccion}\n`;
+    text += `🚌 *Líneas disponibles:* ${p.lineasAsociadas || 'Microbuses y Colectivos'}\n`;
+    text += advertenciaRadio + '\n\n';
+    text += `🗺️ *Cómo llegar caminando (Google Maps):*\n${paradaResult.googleMapsDirectionsUrl}`;
+
+    return {
+      text,
+      parada: p,
+      distanciaMetros: paradaResult.distanciaMetros,
+      googleMapsUrl: paradaResult.googleMapsUrl,
+      googleMapsDirectionsUrl: paradaResult.googleMapsDirectionsUrl,
+    };
+  }
+
+  /**
+   * Tarea 7 (HU #3): Recomendar punto de espera seguro más cercano para Radio Taxi
+   */
+  formatRadioTaxiWithSafePoint(safePointResult: any, taxis: any[]) {
+    const sp = safePointResult.parada;
+    let text = `🚖 *Punto seguro de espera recomendado para tu Radio Taxi:*\n\n`;
+    text += `🛡️ *${sp.nombre}*\n`;
+    text += `📍 *Ubicación:* ${sp.direccion} (a ${safePointResult.distanciaMetros}m de ti)\n`;
+    text += `🗺️ *Ver en mapa:* ${safePointResult.googleMapsUrl}\n\n`;
+    text += `📞 *Centrales autorizadas listas para llamar:*\n`;
+
+    taxis.slice(0, 3).forEach((t, i) => {
+      text += `${i + 1}. *${t.nombre}* - Tel: ${t.telefonoFormateado} (${t.tarifaBaseEstimada})\n`;
+    });
+
+    return {
+      text,
+      safePoint: sp,
+      taxis,
+      directionsUrl: safePointResult.googleMapsDirectionsUrl,
+    };
+  }
 }
