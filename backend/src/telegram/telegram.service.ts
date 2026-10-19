@@ -16,6 +16,8 @@ import { HorariosService } from '../transport/horarios/horarios.service';
 import { TaxisService } from '../transport/taxis/taxis.service';
 import { HaversineService } from '../transport/geo/haversine.service';
 import { ComparativeFlowService } from '../chat/comparative-flow.service';
+import { GeminiService } from '../nlp/gemini.service';
+import { MqttService } from '../mqtt/mqtt.service';
 
 @Injectable()
 export class TelegramService {
@@ -34,6 +36,8 @@ export class TelegramService {
     @Optional() private readonly audioTranscriptionService?: AudioTranscriptionService,
     @Optional() private readonly haversineService?: HaversineService,
     @Optional() private readonly comparativeFlowService?: ComparativeFlowService,
+    @Optional() private readonly geminiService?: GeminiService,
+    @Optional() private readonly mqttService?: MqttService,
   ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN') || '';
     this.webhookSecret =
@@ -189,6 +193,16 @@ export class TelegramService {
         `Update #${update?.update_id} recibido sin contenido procesable.`,
       );
       return { processed: false };
+    }
+
+    // HU #6 Tarea 3: Publicación desacoplada en MQTT al recibir el webhook
+    if (this.mqttService) {
+      this.mqttService.publish(this.mqttService.getIncomingTopic(), {
+        chatId: parsed.chatId,
+        text: parsed.text,
+        sender: parsed.senderName,
+        timestamp: Date.now(),
+      });
     }
 
     if (parsed.isVoice) {
@@ -371,13 +385,32 @@ export class TelegramService {
         replyText = formatted.text;
         parseMode = formatted.parse_mode;
       } else {
-        const fallback = this.telegramFormatter.formatRouteResponse(
-          '',
-          [],
-          preferredParseMode,
-        );
-        replyText = fallback.text;
-        parseMode = fallback.parse_mode;
+        if (this.geminiService) {
+          const aiRes = await this.geminiService.interpretQuery(text);
+          if (aiRes.intent === 'Buscar Ruta' && aiRes.destination && this.rutasService) {
+            const routes = await this.rutasService.getRoutesForDestination(aiRes.destination);
+            const formatted = this.telegramFormatter.formatRouteResponse(
+              aiRes.destination,
+              routes,
+              preferredParseMode,
+            );
+            replyText = formatted.text;
+            parseMode = formatted.parse_mode;
+          } else if (aiRes.intent === 'AclaracionDestino' && aiRes.mensajeAclaracion) {
+            replyText = aiRes.mensajeAclaracion;
+            parseMode = 'HTML';
+          }
+        }
+
+        if (!replyText) {
+          const fallback = this.telegramFormatter.formatRouteResponse(
+            '',
+            [],
+            preferredParseMode,
+          );
+          replyText = fallback.text;
+          parseMode = fallback.parse_mode;
+        }
       }
     } else if (this.telegramFormatter) {
       const welcome = this.telegramFormatter.formatWelcomeMessage(senderName);

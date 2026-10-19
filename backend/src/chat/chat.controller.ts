@@ -1,11 +1,13 @@
 import { Controller, Post, Body, Optional, BadRequestException } from '@nestjs/common';
 import { NlpService } from '../nlp/nlp.service';
+import { GeminiService } from '../nlp/gemini.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
 import { TaxisService } from '../transport/taxis/taxis.service';
 import { FormatterService } from '../formatter/formatter.service';
 import { ComparativeFlowService } from './comparative-flow.service';
 import { HaversineService } from '../transport/geo/haversine.service';
+import { MqttService } from '../mqtt/mqtt.service';
 
 @Controller('api/chat')
 export class ChatController {
@@ -17,6 +19,8 @@ export class ChatController {
     private readonly formatterService: FormatterService,
     @Optional() private readonly comparativeFlowService?: ComparativeFlowService,
     @Optional() private readonly haversineService?: HaversineService,
+    @Optional() private readonly geminiService?: GeminiService,
+    @Optional() private readonly mqttService?: MqttService,
   ) {}
 
   @Post()
@@ -32,6 +36,15 @@ export class ChatController {
 
     const currentUserId = userId || 'default_user';
 
+    // HU #6 Tarea 3: Publicación desacoplada en MQTT
+    if (this.mqttService) {
+      this.mqttService.publish(this.mqttService.getIncomingTopic(), {
+        userId: currentUserId,
+        text,
+        timestamp: Date.now(),
+      });
+    }
+
     // HU #2: Verificar si el usuario está enviando una selección interactiva (1, 2, 3 o nombres)
     if (this.comparativeFlowService && /^(1|2|3|micro|colectivo|taxi|opt_)/i.test(text.trim())) {
       const selection = await this.comparativeFlowService.processSelection(currentUserId, text);
@@ -40,7 +53,16 @@ export class ChatController {
       }
     }
 
-    const queryResult = this.nlpService.processQuery(text);
+    let queryResult = this.nlpService.processQuery(text);
+
+    // HU #6 Tarea 2: Si el NLP local no reconoce el destino y GeminiService está disponible, interpretar con IA
+    if (queryResult.intent === 'unknown' && this.geminiService) {
+      const aiResult = await this.geminiService.interpretQuery(text);
+      if (aiResult.intent !== 'unknown') {
+        queryResult = aiResult as any;
+      }
+    }
+
     const { intent, destination } = queryResult;
 
     if (intent === 'Saludo') {
