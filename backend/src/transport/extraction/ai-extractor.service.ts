@@ -56,7 +56,7 @@ export class AiExtractorService {
     this.model =
       this.configService?.get<string>('GEMINI_MODEL') ||
       process.env.GEMINI_MODEL ||
-      'gemini-1.5-flash';
+      'gemini-flash-lite-latest';
 
     if (supabaseUrl && supabaseKey) {
       this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -105,21 +105,32 @@ Esquema requerido:
 }
 `;
 
-      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
-      const resp = await axios.post(
-        geminiEndpoint,
-        {
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-        },
-        { timeout: 15000 },
-      );
+      const tryModels = [this.model, 'gemini-flash-lite-latest', 'gemini-3.6-flash', 'gemini-flash-latest'];
+      const uniqueModels = [...new Set(tryModels.filter(Boolean))];
 
-      const jsonStr = resp.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!jsonStr) return null;
+      for (const currentModel of uniqueModels) {
+        try {
+          const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${this.apiKey}`;
+          const resp = await axios.post(
+            geminiEndpoint,
+            {
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+            },
+            { timeout: 15000 },
+          );
 
-      const parsed: StructuredTransportPayload = JSON.parse(jsonStr);
-      return this.validateAndNormalizePayload(parsed);
+          const jsonStr = resp.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (jsonStr) {
+            const parsed: StructuredTransportPayload = JSON.parse(jsonStr);
+            return this.validateAndNormalizePayload(parsed);
+          }
+        } catch (mErr: any) {
+          this.logger.warn(`Modelo ${currentModel} falló en ai-extractor (${mErr.response?.status || mErr.message}). Probando alternativo...`);
+        }
+      }
+
+      return null;
     } catch (err: any) {
       this.logger.error(`Error en pipeline de extracción con IA: ${err.message}`);
       return null;

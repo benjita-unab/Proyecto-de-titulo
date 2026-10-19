@@ -20,9 +20,9 @@ export class FormatterService {
       text += `Pasa por: ${route.recorrido}.\n\n`;
     });
 
-    // Enlace de Google Maps
+    // Enlace de Google Maps universal (evita error 404)
     const mapsDest = encodeURIComponent(destination + " Quilpue");
-    text += `🗺️ Puedes ver la ruta en el mapa aquí:\nhttps://www.google.com/maps/dir/?api=1&destination=${mapsDest}&travelmode=transit`;
+    text += `🗺️ Puedes ver la ruta en el mapa aquí:\nhttps://maps.google.com/?q=${mapsDest}`;
 
     return {
       text: text,
@@ -100,7 +100,7 @@ export class FormatterService {
 
     // Bloque 3: Radiotaxis
     const tx = data.radiotaxi || {
-      centrales: 'Taxiexpress, Aracis Vía, C&B',
+      centrales: 'Taxiexpress Quilpué, Transporte 24 Horas',
       tarifaBase: '$2.500 - $3.200',
       tiempoEspera: 'Inmediato / Domicilio',
     };

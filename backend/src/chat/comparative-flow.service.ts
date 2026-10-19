@@ -65,7 +65,7 @@ export class ComparativeFlowService {
       : 'Línea 1, Línea 2, Línea 3';
     const centralesTaxis = taxis.length > 0
       ? taxis.map((t) => t.nombre).slice(0, 2).join(', ')
-      : 'Taxiexpress, Aracis Vía';
+      : 'Taxiexpress Quilpué, Transporte 24 Horas';
 
     const comparativeData = {
       microbus: {
@@ -103,7 +103,14 @@ export class ComparativeFlowService {
    * y entrega el desglose con líneas, paradas y costos en <= 1.5s.
    */
   async processSelection(userId: string, rawInput: string) {
-    const destination = this.getSessionDestination(userId) || 'tu destino';
+    let destination = this.getSessionDestination(userId);
+    if (!destination && /sel_(?:micro|col|taxi)_(.+)/i.test(rawInput)) {
+      const match = rawInput.match(/sel_(?:micro|col|taxi)_(.+)/i);
+      if (match && match[1]) {
+        destination = match[1];
+      }
+    }
+    destination = destination || 'tu destino';
     const clean = rawInput.toLowerCase().trim();
 
     // Detección de selección
@@ -145,7 +152,7 @@ export class ComparativeFlowService {
         webText += `Tarifa Adulto Mayor: *$${col.tarifaAdultoMayor}* (General: $${col.tarifaDiurna})\n\n`;
       });
       const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-      webText += `🗺️ Ver paradas en mapa:\nhttps://www.google.com/maps/dir/?api=1&destination=${encodedDest}&travelmode=transit`;
+      webText += `🗺️ Ver paradas en mapa:\nhttps://maps.google.com/?q=${encodedDest}`;
 
       return {
         selectedType: 'colectivo',

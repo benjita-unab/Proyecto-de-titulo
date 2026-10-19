@@ -70,6 +70,7 @@ export interface ParsedTelegramMessage {
   duration?: number;
   location?: TelegramLocationDto;
   callbackData?: string;
+  callbackQueryId?: string;
 }
 
 export class TelegramWebhookResponseDto {

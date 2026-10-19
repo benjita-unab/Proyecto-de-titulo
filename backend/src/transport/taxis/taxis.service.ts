@@ -13,37 +13,7 @@ export interface RadioTaxiDto {
   autorizada: boolean;
 }
 
-export const RADIOTAXIS_CONTINGENCIA_LIMACHE: RadioTaxiDto[] = [
-  {
-    id: 'TAXI-VLM-01',
-    nombre: 'Radio Taxi Aracis Vía',
-    telefono: '+56989005971',
-    telefonoFormateado: '(+56 9) 8900 5971',
-    direccionBase: 'Madrid 2594, Villa Alemana',
-    tarifaBaseEstimada: '$2.500 - $3.200',
-    horarioAtencion: 'Lun a Dom 24 horas',
-    autorizada: true,
-  },
-  {
-    id: 'TAXI-VLM-02',
-    nombre: 'Radio Taxi Cartagena',
-    telefono: '+56956327251',
-    telefonoFormateado: '(+56 9) 5632 7251',
-    direccionBase: 'Covadonga 246, Villa Alemana',
-    tarifaBaseEstimada: '$2.500 - $3.000',
-    horarioAtencion: 'Lun a Dom 24 horas',
-    autorizada: true,
-  },
-  {
-    id: 'TAXI-VLM-03',
-    nombre: 'Radio Taxi Villa Alemana C & B',
-    telefono: '+56323176457',
-    telefonoFormateado: '(32) 317 6457',
-    direccionBase: 'Los Peumos 2140, Villa Alemana',
-    tarifaBaseEstimada: '$2.500 - $3.000',
-    horarioAtencion: 'Lun a Dom 24 horas',
-    autorizada: true,
-  },
+export const RADIOTAXIS_CONTINGENCIA_QUILPUE: RadioTaxiDto[] = [
   {
     id: 'TAXI-QLP-01',
     nombre: 'Taxiexpress Quilpué',
@@ -64,7 +34,19 @@ export const RADIOTAXIS_CONTINGENCIA_LIMACHE: RadioTaxiDto[] = [
     horarioAtencion: 'Lun a Dom 24 horas',
     autorizada: true,
   },
+  {
+    id: 'TAXI-QLP-03',
+    nombre: 'Radio Taxi Quilpué Centro',
+    telefono: '+56977665544',
+    telefonoFormateado: '(+56 9) 7766 5544',
+    direccionBase: 'Av. Los Carrera 850, Quilpué',
+    tarifaBaseEstimada: '$2.500 - $3.200',
+    horarioAtencion: 'Lun a Dom 24 horas',
+    autorizada: true,
+  },
 ];
+
+export const RADIOTAXIS_CONTINGENCIA_LIMACHE = RADIOTAXIS_CONTINGENCIA_QUILPUE;
 
 @Injectable()
 export class TaxisService {
@@ -146,6 +128,16 @@ export class TaxisService {
         this.logger.error(`Error inesperado al obtener radiotaxis: ${err.message}`);
         resultList = RADIOTAXIS_CONTINGENCIA_LIMACHE;
       }
+    }
+
+    // Excluir permanentemente cualquier radiotaxi de Villa Alemana
+    resultList = resultList.filter((item) => {
+      const corpus = `${item.nombre} ${item.direccionBase}`.toLowerCase();
+      return !corpus.includes('villa alemana');
+    });
+
+    if (resultList.length === 0) {
+      resultList = RADIOTAXIS_CONTINGENCIA_QUILPUE;
     }
 
     if (comuna && comuna.trim()) {

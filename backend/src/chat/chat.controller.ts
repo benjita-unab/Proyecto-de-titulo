@@ -45,41 +45,60 @@ export class ChatController {
       });
     }
 
+    const sendReply = (responsePayload: any) => {
+      if (this.mqttService) {
+        this.mqttService.publishOutgoingResponse('web', responsePayload, {
+          userId: currentUserId,
+          text,
+        });
+      }
+      return responsePayload;
+    };
+
     // HU #2: Verificar si el usuario está enviando una selección interactiva (1, 2, 3 o nombres)
     if (this.comparativeFlowService && /^(1|2|3|micro|colectivo|taxi|opt_)/i.test(text.trim())) {
       const selection = await this.comparativeFlowService.processSelection(currentUserId, text);
       if (selection) {
-        return selection.web;
+        return sendReply(selection.web);
       }
     }
 
-    let queryResult = this.nlpService.processQuery(text);
-
-    // HU #6 Tarea 2: Si el NLP local no reconoce el destino y GeminiService está disponible, interpretar con IA
-    if (queryResult.intent === 'unknown' && this.geminiService) {
-      const aiResult = await this.geminiService.interpretQuery(text);
-      if (aiResult.intent !== 'unknown') {
-        queryResult = aiResult as any;
+    let aiRes: any = null;
+    if (this.geminiService) {
+      try {
+        aiRes = await this.geminiService.interpretQuery(text);
+      } catch (err: any) {
+        // Fallback local
       }
     }
+
+    let queryResult =
+      aiRes && !aiRes.usandoFallback && aiRes.intent !== 'unknown'
+        ? (aiRes as any)
+        : this.nlpService.processQuery(text);
 
     const { intent, destination } = queryResult;
 
     if (intent === 'Saludo') {
-      return {
-        text: '¡Hola! Te damos la bienvenida a MoviTech. Soy tu asistente de movilidad para acompañarte en tus viajes en Quilpué y Villa Alemana. ¿En qué te puedo ayudar hoy? Puedes preguntarme cómo llegar a algún lugar (ej: Hospital de Quilpué o Feria El Belloto), consultar horarios de microbuses o pedir el contacto de radiotaxis.',
-      };
+      return sendReply({
+        text:
+          aiRes?.respuestaModelada ||
+          '¡Hola! Te damos la bienvenida a MoviTech. Soy tu asistente de movilidad para acompañarte en tus viajes en Quilpué. ¿En qué te puedo ayudar hoy? Puedes preguntarme cómo llegar a algún lugar (ej: Hospital de Quilpué o Feria El Belloto), consultar horarios de microbuses o pedir el contacto de radiotaxis.',
+      });
     }
 
     if (intent === 'Consultar RadioTaxi') {
       const comuna = (queryResult as any).comuna;
       const taxis = await this.taxisService.getCentralesRadioTaxi(comuna);
-      const textoComuna = comuna ? ` en ${comuna}` : ' en Quilpué y Villa Alemana';
-      return {
-        text: `Aquí tiene las centrales de Radio Taxi autorizadas${textoComuna} para llamar con un solo toque:`,
+      const textoComuna = comuna ? ` en ${comuna}` : ' en Quilpué';
+      const intro = aiRes?.respuestaModelada
+        ? `${aiRes.respuestaModelada}\n\nAquí tiene las centrales de Radio Taxi autorizadas${textoComuna} para llamar con un solo toque:`
+        : `Aquí tiene las centrales de Radio Taxi autorizadas${textoComuna} para llamar con un solo toque:`;
+      return sendReply({
+        text: intro,
         showRadioTaxis: true,
         taxis,
-      };
+      });
     }
 
     if (intent === 'Consultar Horario') {
@@ -90,7 +109,7 @@ export class ChatController {
         dbHorarios.franjas,
         { linea: dbHorarios.nombreLinea, empresa: dbHorarios.empresa },
       );
-      return this.formatterService.formatHorarioResponse(statusResult);
+      return sendReply(this.formatterService.formatHorarioResponse(statusResult));
     }
 
     if (intent === 'Buscar Ruta' && destination) {
@@ -100,14 +119,31 @@ export class ChatController {
           currentUserId,
           destination,
         );
-        return comparativeResult.webResponse;
+        const webRes = comparativeResult.webResponse;
+        if (aiRes?.respuestaModelada) {
+          webRes.text = `💬 ${aiRes.respuestaModelada}\n\n` + webRes.text;
+        }
+        return sendReply(webRes);
       }
 
       const routes = await this.rutasService.getRoutesForDestination(destination);
-      return this.formatterService.formatRouteResponse(destination, routes);
+      const routeRes = this.formatterService.formatRouteResponse(destination, routes);
+      if (aiRes?.respuestaModelada) {
+        routeRes.text = `💬 ${aiRes.respuestaModelada}\n\n` + routeRes.text;
+      }
+      return sendReply(routeRes);
     }
 
-    return this.formatterService.formatRouteResponse('', []);
+    if (intent === 'AclaracionDestino') {
+      return sendReply({
+        text:
+          aiRes?.respuestaModelada ||
+          aiRes?.mensajeAclaracion ||
+          'Disculpa, no entendí bien tu destino. ¿Vas al Hospital de Quilpué, Estación Quilpué, Los Pinos o Feria El Belloto?',
+      });
+    }
+
+    return sendReply(this.formatterService.formatRouteResponse('', []));
   }
 
   /**
@@ -144,25 +180,39 @@ export class ChatController {
       throw new BadRequestException('Coordenadas geográficas inválidas o fuera de rango permitido.');
     }
 
+    let result: any;
     if (forTaxi) {
       const safePoint = await this.haversineService.findClosestStop(latitude, longitude, {
         soloPuntosSeguros: true,
       });
       const taxis = await this.taxisService.getCentralesRadioTaxi();
       if (!safePoint) {
-        return { text: 'No pudimos localizar un punto seguro en las inmediaciones.' };
+        result = { text: 'No pudimos localizar un punto seguro en las inmediaciones.' };
+      } else {
+        result = this.formatterService.formatRadioTaxiWithSafePoint(safePoint, taxis);
       }
-      return this.formatterService.formatRadioTaxiWithSafePoint(safePoint, taxis);
+    } else {
+      const stopResult = await this.haversineService.findClosestStop(latitude, longitude, {
+        radioInicialMetros: 500,
+      });
+
+      if (!stopResult) {
+        result = { text: 'No encontramos paradas cercanas a tu ubicación actual.' };
+      } else {
+        result = this.formatterService.formatNearbyStopResponse(stopResult, destination);
+      }
     }
 
-    const stopResult = await this.haversineService.findClosestStop(latitude, longitude, {
-      radioInicialMetros: 500,
-    });
-
-    if (!stopResult) {
-      return { text: 'No encontramos paradas cercanas a tu ubicación actual.' };
+    // HU #6 Tarea 3: Publicación desacoplada de la respuesta saliente en MQTT
+    if (this.mqttService) {
+      this.mqttService.publishOutgoingResponse('web', result, {
+        latitude,
+        longitude,
+        destination,
+        forTaxi,
+      });
     }
 
-    return this.formatterService.formatNearbyStopResponse(stopResult, destination);
+    return result;
   }
 }

@@ -858,4 +858,193 @@ describe('TelegramService', () => {
       });
     });
   });
+
+  describe('HU #2 & HU #5: Flujo comparativo y botones inline en Telegram', () => {
+    let interactiveService: TelegramService;
+    let mockComparativeFlow: any;
+
+    beforeEach(async () => {
+      mockComparativeFlow = {
+        generateComparativeSummary: jest.fn().mockResolvedValue({
+          destination: 'Plaza de Quilpué',
+          comparativeData: {},
+          webResponse: {},
+          telegramResponse: {
+            text: '🧭 <b>OPCIONES DE TRANSPORTE A: PLAZA DE QUILPUÉ</b>\n\n1. Micro\n2. Colectivo\n3. Taxi',
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '🚌 1. Ver Micros', callback_data: 'sel_micro_Plaza' },
+                  { text: '🚕 2. Ver Colectivos', callback_data: 'sel_col_Plaza' },
+                ],
+                [
+                  { text: '🚖 3. Ver Radio Taxis', callback_data: 'sel_taxi_Plaza' },
+                ],
+              ],
+            },
+          },
+        }),
+        processSelection: jest.fn().mockImplementation((userId: string, input: string) => {
+          if (/1|micro|sel_micro/i.test(input)) {
+            return Promise.resolve({
+              selectedType: 'microbus',
+              destination: 'Plaza de Quilpué',
+              telegram: { text: '🚌 <b>Líneas de Microbuses hacia Plaza</b>', parse_mode: 'HTML' },
+            });
+          }
+          if (/2|colectivo|sel_col/i.test(input)) {
+            return Promise.resolve({
+              selectedType: 'colectivo',
+              destination: 'Plaza de Quilpué',
+              telegram: { text: '🚕 <b>Líneas de Colectivos hacia Plaza</b>', parse_mode: 'HTML' },
+            });
+          }
+          if (/3|taxi|sel_taxi/i.test(input)) {
+            return Promise.resolve({
+              selectedType: 'radiotaxi',
+              destination: 'Plaza de Quilpué',
+              telegram: { text: '🚖 <b>Centrales de Radio Taxi</b>', parse_mode: 'HTML' },
+            });
+          }
+          return Promise.resolve(null);
+        }),
+      };
+
+      const mockNlp = {
+        processQuery: jest.fn().mockReturnValue({
+          intent: 'Buscar Ruta',
+          destination: 'Plaza de Quilpué',
+        }),
+      };
+
+      const mockFormatter = {
+        formatWelcomeMessage: jest.fn(),
+        formatRouteResponse: jest.fn(),
+      };
+
+      interactiveService = new TelegramService(
+        { get: jest.fn().mockReturnValue(mockBotToken) } as any,
+        mockFormatter as any,
+        mockNlp as any,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mockComparativeFlow,
+      );
+    });
+
+    it('debe enviar resumen comparativo y botones inline_keyboard al consultar un destino', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { ok: true } });
+
+      const result = await interactiveService.syncTelegramEventWithRoutes(
+        112233,
+        '¿Cómo llego a la plaza de quilpué?',
+        'Ana',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockComparativeFlow.generateComparativeSummary).toHaveBeenCalledWith(
+        '112233',
+        'Plaza de Quilpué',
+      );
+      expect(result.replyMarkup).toBeDefined();
+      expect(result.replyMarkup.inline_keyboard.length).toBe(2);
+
+      // Debe haber enviado el mensaje para habilitar la ubicación
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          chat_id: 112233,
+          text: expect.stringContaining('Para encontrar tu parada más cercana'),
+          reply_markup: expect.objectContaining({
+            keyboard: expect.any(Array),
+          }),
+        }),
+      );
+
+      // Y el mensaje comparativo de opciones con inline keyboard
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          chat_id: 112233,
+          text: expect.stringContaining('OPCIONES DE TRANSPORTE'),
+          reply_markup: expect.objectContaining({
+            inline_keyboard: expect.any(Array),
+          }),
+        }),
+      );
+    });
+
+    it('debe procesar clic en boton inline (callback_query), responder callback y enviar detalle', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { ok: true } });
+
+      const update: TelegramUpdate = {
+        update_id: 99001,
+        callback_query: {
+          id: 'cb_query_123',
+          from: { id: 112233, is_bot: false, first_name: 'Ana' },
+          message: {
+            message_id: 400,
+            chat: { id: 112233, type: 'private' },
+            date: 1710000000,
+          },
+          data: 'sel_col_Plaza',
+        },
+      };
+
+      const result = await interactiveService.handleIncomingUpdate(update);
+
+      expect(result.processed).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(mockComparativeFlow.processSelection).toHaveBeenCalledWith('112233', 'sel_col_Plaza');
+
+      // Validar que se respondió a la consulta de callback_query para quitar el spinner
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/answerCallbackQuery'),
+        expect.objectContaining({
+          callback_query_id: 'cb_query_123',
+        }),
+      );
+
+      // Validar que se envió la respuesta del detalle de colectivos
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          chat_id: 112233,
+          text: expect.stringContaining('Líneas de Colectivos'),
+        }),
+      );
+    });
+
+    it('debe procesar selección escrita por texto (ej. "2" o "colectivo") directamente', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      const result = await interactiveService.syncTelegramEventWithRoutes(
+        112233,
+        '2',
+        'Ana',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockComparativeFlow.processSelection).toHaveBeenCalledWith('112233', '2');
+      expect(result.replyText).toContain('Líneas de Colectivos');
+    });
+
+    it('debe procesar selección escrita por texto "3" para radiotaxis', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      const result = await interactiveService.syncTelegramEventWithRoutes(
+        112233,
+        '3',
+        'Ana',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockComparativeFlow.processSelection).toHaveBeenCalledWith('112233', '3');
+      expect(result.replyText).toContain('Centrales de Radio Taxi');
+    });
+  });
 });

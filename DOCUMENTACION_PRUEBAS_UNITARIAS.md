@@ -2,8 +2,8 @@
 
 **Proyecto:** Aplicación de Transporte para Adultos Mayores (Quilpué, Villa Alemana y Marga Marga / Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
-**Total de Suites de Pruebas Unitarias:** 11 Suites  
-**Total de Pruebas Unitarias Registradas:** 94 Tests (100% pasando)  
+**Total de Suites de Pruebas Unitarias:** 14 Suites  
+**Total de Pruebas Unitarias Registradas:** 128 Tests (100% pasando)  
 **Pruebas de Integración (E2E):** 2 Suites / 5 Tests (100% pasando)  
 
 ---
@@ -23,9 +23,11 @@
 | **HU #53 (Tarea 1-3)** | Radiotaxis: Dashboard, tablas y extractor web contingente | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
 | **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 15 tests |
 | **HU #54 (Tarea 2)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) | 5 tests |
-| **HU #54 (Tarea 3)** | Sincronización eventos bot con Rutas y Supabase (CA-54.1, CA-54.2, CA-54.3) | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) | 14 tests |
-| **HU #54 (Tarea 4)** | Recepción, descarga y transcripción de audios (OGG) hacia asistente de rutas | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) / [`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts) | 28 tests (21 Telegram + 7 Audio) |
-| **Actualización Reciente** | Extracción, población y actualización multicomunal de transporte y radiotaxis (Quilpué y Villa Alemana) | [`poblar-transporte.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/scripts/poblar-transporte.ts), [`poblar-horarios.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/scripts/poblar-horarios.ts), [`poblar-radiotaxis.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/scripts/poblar-radiotaxis.ts), [`nlp.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.spec.ts), [`rutas.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/rutas/rutas.service.spec.ts), [`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts), [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) | 94 tests unitarios integrados (100% pasando) |
+| **HU #54 (Tarea 3-4) + HU #2** | Botones inline en Telegram, flujo comparativo de 3 medios y notas de voz | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) / [`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts) | 44 tests (37 Telegram + 7 Audio) |
+| **PR #22 (HU #5)** | Incorporar colectivos de Quilpué como tercer medio de transporte (T1-T5) | [`colectivos.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/colectivos/colectivos.service.spec.ts) | 6 tests unitarios |
+| **PR #23 (HU #3)** | Geolocalización y parada más cercana con fórmula Haversine (T1-T7) | [`haversine.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/geo/haversine.service.spec.ts) | 15 tests unitarios |
+| **HU #2** | Sistema de selección comparativa de 3 medios y flujo interactivo (T1-T5) | [`comparative-flow.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/comparative-flow.service.spec.ts) | 7 tests unitarios |
+| **Actualización Reciente** | Integración total Telegram con botones interactivos y suite completa | Todas las suites unitarias y E2E | 128 tests unitarios + 5 E2E (100% pasando) |
 
 ---
 
@@ -164,6 +166,47 @@
 - [x] **`AudioTranscriptionService > debe procesar el archivo mediante puente local de transcripción en entorno de pruebas`**: Decodificación y extracción de texto en entornos de desarrollo y pruebas.
 - [x] **`AudioTranscriptionService > debe llamar a la API externa de Whisper si se proporciona OPENAI_API_KEY`**: Integración con multipart y llamada a la API de transcripción externa.
 - [x] **`AudioTranscriptionService > debe degradar a puente simulado si la API externa falla con error de red`**: Resiliencia y tolerancia a fallos ante caídas del proveedor STT.
+
+---
+
+### Suite 12: Colectivos de Quilpué ([`colectivos.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/colectivos/colectivos.service.spec.ts))
+> **Objetivo:** Incorporar colectivos de Quilpué como tercer medio de transporte, tarifas diurnas, nocturnas y preferenciales para adultos mayores, trazados y puntos de espera (HU #5 / PR #22).
+
+- [x] **`ColectivosService > should be defined`**: Instanciación correcta del servicio.
+- [x] **`ColectivosService > getColectivos > debe devolver todas las líneas de colectivos de contingencia si no se especifica filtro`**: Valida las líneas 1, 2, 3, 4 y 5 con tarifas adulto mayor ($600) y diurna ($850).
+- [x] **`ColectivosService > getColectivos > debe filtrar colectivos por destino relevante (ej. Los Pinos o Belloto)`**: Búsqueda contextual sobre trazados y paraderos.
+- [x] **`ColectivosService > getColectivos > debe soportar búsqueda sin acentos ni distinción de mayúsculas`**: Búsqueda insensible a acentos ("quilpue" vs "QUILPUÉ").
+- [x] **`ColectivosService > getColectivos > debe usar catálogo de contingencia si Supabase no está disponible o falla`**: Resiliencia con catálogo precargado y latencia < 1.5s.
+- [x] **`ColectivosService > getPuntosEsperaColectivo > debe devolver puntos de espera predefinidos y filtrar por línea`**: Puntos clave como Garita Belloto Norte, Plaza de Quilpué, Hospital y Terminal El Retiro.
+
+---
+
+### Suite 13: Geolocalización y Parada más Cercana con Haversine ([`haversine.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/geo/haversine.service.spec.ts))
+> **Objetivo:** Cálculo geodésico exacto mediante fórmula Haversine, validación estricta de coordenadas, enlaces de mapas y radio progresivo hacia paradas más cercanas y puntos seguros (HU #3 / PR #23).
+
+- [x] **`HaversineService > should be defined`**: Instanciación del motor geográfico.
+- [x] **`HaversineService > calculateDistance > debe devolver 0 metros para el mismo punto`**: Distancia nula entre coordenadas idénticas.
+- [x] **`HaversineService > calculateDistance > debe ser simétrica entre dos coordenadas`**: Valida que dist(A, B) === dist(B, A) con precisión menor a 10m.
+- [x] **`HaversineService > validateCoordinates > debe aceptar coordenadas válidas en la zona de Quilpué y Región de Valparaíso`**: Validación de latitudes y longitudes reales de la zona central de Chile.
+- [x] **`HaversineService > validateCoordinates > debe rechazar coordenadas fuera de rango lat/lng o no numéricas`**: Protección ante valores corruptos, NaN, null y coordenadas en otros continentes.
+- [x] **`HaversineService > generateGoogleMapsLink y generateWalkingDirectionsLink`**: Generación de URLs de Google Maps y rutas a pie sin consumir cuotas de pago de API.
+- [x] **`HaversineService > findClosestStop > debe encontrar la parada más cercana en el catálogo para la Plaza de Quilpué`**: Detección con radio inicial de 500m.
+- [x] **`HaversineService > findClosestStop > debe ampliar el radio si la distancia supera el radio inicial sin arrojar error`**: Algoritmo de radio progresivo y flag `radioAmpliado: true`.
+- [x] **`HaversineService > findClosestStop > debe filtrar exclusivamente paradas seguras cuando soloPuntosSeguros es true`**: Priorización de paradas y puntos iluminados/seguros.
+- [x] **`HaversineService > findClosestStop > debe lanzar excepción si se envían coordenadas inválidas`**: Manejo seguro de errores ante entradas incorrectas.
+
+---
+
+### Suite 14: Sistema Comparativo de 3 Medios de Transporte ([`comparative-flow.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/comparative-flow.service.spec.ts))
+> **Objetivo:** Flujo interactivo que compara Microbuses, Colectivos y Radiotaxis frente a un mismo destino con costos, frecuencias y selección guiada por pasos (HU #2 / PR #22-23).
+
+- [x] **`ComparativeFlowService > should be defined`**: Instanciación del orquestador comparativo.
+- [x] **`ComparativeFlowService > Gestión de sesiones de usuario > debe registrar, recuperar y limpiar el destino consultado`**: Manejo de estado en memoria con TTL de 15 minutos.
+- [x] **`ComparativeFlowService > generateComparativeSummary > debe generar el resumen comparativo de los 3 medios de transporte`**: Comparativa con tarifas diferenciadas para adulto mayor ($150 micro, $600 colectivo, $2.500-$3.200 radiotaxi).
+- [x] **`ComparativeFlowService > processSelection > debe entregar detalle de microbuses al seleccionar opción 1 o "micro"`**: Retorno de líneas, recorridos y horarios.
+- [x] **`ComparativeFlowService > processSelection > debe entregar detalle de colectivos al seleccionar opción 2 o "colectivo"`**: Retorno de colectivos de Quilpué y enlace cartográfico.
+- [x] **`ComparativeFlowService > processSelection > debe entregar centrales de radiotaxi al seleccionar opción 3 o "taxi"`**: Activación de discado rápido para centrales autorizadas.
+- [x] **`ComparativeFlowService > processSelection > debe devolver null para una entrada que no corresponde a selección válida`**: Manejo de opciones fuera de menú.
 
 ---
 

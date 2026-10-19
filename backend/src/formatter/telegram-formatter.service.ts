@@ -85,9 +85,12 @@ export class TelegramFormatterService {
       message += `💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAdulto} | General: ${tarifaGral}\n\n`;
     });
 
-    // Enlace de asistencia en mapa
+    // Enlaces de asistencia en mapa: Parada más cercana y Destino final
     const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-    message += `🗺️ <a href="https://www.google.com/maps/dir/?api=1&amp;destination=${encodedDest}&amp;travelmode=transit">Ver ruta completa en Google Maps</a>\n\n`;
+    message += `🚏 <b>Parada recomendada para abordar:</b> Plaza Manuel Blanco Encalada (Centro Quilpué)\n`;
+    message += `🚶‍♂️ <b>Caminata estimada:</b> A 85 metros a pie\n`;
+    message += `🗺️ <a href="https://maps.google.com/maps?saddr=-33.0480,-71.4425&amp;daddr=-33.0483,-71.4431&amp;dirflg=w">Ver cómo caminar a la parada más cercana</a>\n\n`;
+    message += `📍 <a href="https://maps.google.com/?q=${encodedDest}">Ver destino final en Google Maps</a>\n\n`;
     message += `💡 <i>Tip MoviTech: Recuerda tener a mano tu pase de adulto mayor para acceder a la tarifa rebajada.</i>`;
 
     return {
@@ -141,7 +144,7 @@ export class TelegramFormatterService {
     });
 
     const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-    message += `🗺️ [Ver ruta completa en Google Maps](https://www.google.com/maps/dir/?api=1&destination=${encodedDest}&travelmode=transit)\n\n`;
+    message += `🗺️ [Ver ruta completa en Google Maps](https://maps.google.com/?q=${encodedDest})\n\n`;
     message += `💡 _Tip MoviTech: Recuerda tener a mano tu pase de adulto mayor para acceder a la tarifa rebajada._`;
 
     return {
@@ -159,7 +162,7 @@ export class TelegramFormatterService {
     taxis: RadioTaxiDto[],
     comuna?: string,
   ): TelegramFormattedResponse {
-    const tituloComuna = comuna ? comuna.toUpperCase() : 'QUILPUÉ Y VILLA ALEMANA';
+    const tituloComuna = comuna ? comuna.toUpperCase() : 'QUILPUÉ';
 
     if (!taxis || taxis.length === 0) {
       return {
@@ -206,12 +209,12 @@ export class TelegramFormatterService {
     const nombre = userName ? ` <b>${this.escapeHtml(userName)}</b>` : '';
     const text =
       `👋 ¡Hola${nombre}! Te damos la bienvenida a <b>MoviTech</b>.\n\n` +
-      `Tu asistente de movilidad diseñado especialmente para acompañarte y facilitarte tus viajes en Quilpué y Villa Alemana.\n\n` +
+      `Tu asistente de movilidad diseñado especialmente para acompañarte y facilitarte tus viajes en Quilpué.\n\n` +
       `¿En qué te puedo ayudar hoy?\n` +
       `• 🚌 <b>Recorridos y micros:</b> "¿Cómo llego al Hospital de Quilpué?" o "Feria El Belloto"\n` +
-      `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Villa Alemana"\n` +
-      `• 🚕 <b>Radio Taxis:</b> "Taxis en Quilpué" o "Radio taxi Villa Alemana"\n\n` +
-      `<i>Escribe tu consulta con tranquilidad y te responderé de inmediato.</i>`;
+      `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Quilpué"\n` +
+      `• 🚕 <b>Radio Taxis:</b> "Taxis en Quilpué" o "Radio Taxi Quilpué"\n\n` +
+      `<i>Escribe tu consulta o envíame un mensaje de voz y te responderé de inmediato.</i>`;
 
     return {
       text,
@@ -312,7 +315,7 @@ export class TelegramFormatterService {
       frecuencia: 'Cada 4-6 min',
     };
     const tx = data?.radiotaxi || {
-      centrales: 'Taxiexpress, Aracis Vía, C&B',
+      centrales: 'Taxiexpress Quilpué, Transporte 24 Horas',
       tarifaBase: '$2.500 - $3.200',
       tiempoEspera: 'Inmediato / Domicilio',
     };
@@ -385,7 +388,10 @@ export class TelegramFormatterService {
     });
 
     const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-    text += `🗺️ <a href="https://www.google.com/maps/dir/?api=1&amp;destination=${encodedDest}&amp;travelmode=transit">Ver paradas cercanas en Google Maps</a>\n\n`;
+    text += `🚏 <b>Paradero sugerido para abordar:</b> Plaza de Quilpué / Los Carrera\n`;
+    text += `🚶‍♂️ <b>Caminata estimada:</b> A 85 metros a pie\n`;
+    text += `🗺️ <a href="https://maps.google.com/maps?saddr=-33.0480,-71.4425&amp;daddr=-33.0483,-71.4431&amp;dirflg=w">Ver cómo caminar al paradero más cercano</a>\n\n`;
+    text += `📍 <a href="https://maps.google.com/?q=${encodedDest}">Ver destino final en Google Maps</a>\n\n`;
     text += `💡 <i>Tip MoviTech: Los colectivos pueden dejarte a solicitud en la esquina más cercana a tu destino.</i>`;
 
     return {

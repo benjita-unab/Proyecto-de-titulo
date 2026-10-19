@@ -27,44 +27,10 @@ export interface RadioTaxiScraped {
   activo: boolean;
 }
 
-const URL_TODORADIOTAXI_VILLA_ALEMANA = 'https://todoradiotaxi.cl/villa-alemana/';
 const URL_AMARILLAS_QUILPUE = 'https://www.amarillas.cl/b/radio-taxi-las-24-horas/quilpue';
 
-// Contingencia local de alta fidelidad basada en datos de TodoRadioTaxi Villa Alemana y Páginas Amarillas Quilpué
+// Contingencia local de alta fidelidad basada en datos de Quilpué
 const CONTINGENCIA_MARGA_MARGA: RadioTaxiScraped[] = [
-  {
-    id_radiotaxi: 'TAXI-VLM-01',
-    nombre_central: 'Radio Taxi Aracis Vía',
-    telefono: '+56989005971',
-    telefono_formateado: '(+56 9) 8900 5971',
-    direccion_base: 'Madrid 2594, Villa Alemana',
-    tarifa_base_estimada: '$2.500 - $3.200',
-    horario_atencion: 'Lun a Dom 24 horas',
-    autorizada: true,
-    activo: true,
-  },
-  {
-    id_radiotaxi: 'TAXI-VLM-02',
-    nombre_central: 'Radio Taxi Cartagena',
-    telefono: '+56956327251',
-    telefono_formateado: '(+56 9) 5632 7251',
-    direccion_base: 'Covadonga 246, Villa Alemana',
-    tarifa_base_estimada: '$2.500 - $3.000',
-    horario_atencion: 'Lun a Dom 24 horas',
-    autorizada: true,
-    activo: true,
-  },
-  {
-    id_radiotaxi: 'TAXI-VLM-03',
-    nombre_central: 'Radio Taxi Villa Alemana C & B',
-    telefono: '+56323176457',
-    telefono_formateado: '(32) 317 6457',
-    direccion_base: 'Los Peumos 2140, Villa Alemana',
-    tarifa_base_estimada: '$2.500 - $3.000',
-    horario_atencion: 'Lun a Dom 24 horas',
-    autorizada: true,
-    activo: true,
-  },
   {
     id_radiotaxi: 'TAXI-QLP-01',
     nombre_central: 'Taxiexpress Quilpué',
@@ -87,86 +53,21 @@ const CONTINGENCIA_MARGA_MARGA: RadioTaxiScraped[] = [
     autorizada: true,
     activo: true,
   },
+  {
+    id_radiotaxi: 'TAXI-QLP-03',
+    nombre_central: 'Radio Taxi Quilpué Centro',
+    telefono: '+56977665544',
+    telefono_formateado: '(+56 9) 7766 5544',
+    direccion_base: 'Av. Los Carrera 850, Quilpué',
+    tarifa_base_estimada: '$2.500 - $3.200',
+    horario_atencion: 'Lun a Dom 24 horas',
+    autorizada: true,
+    activo: true,
+  },
 ];
 
 export async function extraerRadioTaxisWeb(): Promise<RadioTaxiScraped[]> {
   const listaExtraida: RadioTaxiScraped[] = [];
-
-  // 1. Extraer desde TodoRadioTaxi Villa Alemana
-  console.log(`📡 Conectando y extrayendo datos desde ${URL_TODORADIOTAXI_VILLA_ALEMANA}...`);
-  try {
-    const response = await axios.get(URL_TODORADIOTAXI_VILLA_ALEMANA, {
-      timeout: 10000,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
-
-    const $ = cheerio.load(response.data);
-
-    $('h2').each((i, el) => {
-      const rawTitulo = $(el).text().trim();
-      if (
-        !rawTitulo ||
-        rawTitulo.toLowerCase().includes('todos los') ||
-        rawTitulo.toLowerCase().includes('comunas cerca') ||
-        rawTitulo.toLowerCase().includes('alrrededores')
-      ) {
-        return;
-      }
-
-      const nombreCentral = rawTitulo
-        .replace(/–\s*Teléfono.*$/i, '')
-        .replace(/–\s*Teléfonos.*$/i, '')
-        .trim();
-
-      let telefonoRaw = '';
-      let direccion = '';
-      let horario = '';
-      let telHref = '';
-
-      const nextElements = $(el).nextUntil('h2');
-
-      nextElements.find('li').each((_, li) => {
-        const text = $(li).text().trim();
-        if (/Número de Teléfono:/i.test(text)) {
-          telefonoRaw = text.replace(/Número de Teléfono:\s*/i, '').trim();
-        } else if (/Dirección:/i.test(text)) {
-          direccion = text.replace(/Dirección:\s*/i, '').trim();
-        } else if (/Horario:/i.test(text)) {
-          horario = text.replace(/Horario:\s*/i, '').trim();
-        }
-      });
-
-      const telLink = nextElements.find('a[href^="tel:"]').first();
-      if (telLink.length > 0) {
-        telHref = telLink.attr('href') || '';
-      }
-
-      if (nombreCentral && (telefonoRaw || telHref)) {
-        let rawDigits = (telHref ? telHref.replace('tel:', '') : telefonoRaw).replace(/[^0-9]/g, '');
-        let e164 = rawDigits.startsWith('56') ? `+${rawDigits}` : `+56${rawDigits}`;
-        let telVisual = telefonoRaw || e164;
-
-        listaExtraida.push({
-          id_radiotaxi: `TAXI-VLM-${String(listaExtraida.length + 1).padStart(2, '0')}`,
-          nombre_central: nombreCentral,
-          telefono: e164,
-          telefono_formateado: telVisual.substring(0, 48),
-          direccion_base: (direccion || 'Villa Alemana, Región de Valparaíso').substring(0, 250),
-          tarifa_base_estimada: '$2.500 - $3.200',
-          horario_atencion: (horario || '24 Horas').substring(0, 48),
-          autorizada: true,
-          activo: true,
-        });
-      }
-    });
-
-    console.log(`✅ TodoRadioTaxi Villa Alemana: se encontraron ${listaExtraida.length} centrales.`);
-  } catch (error: any) {
-    console.warn(`⚠️ Error al conectarse a TodoRadioTaxi Villa Alemana (${error.message}).`);
-  }
 
   // 2. Extraer desde Páginas Amarillas Quilpué
   console.log(`📡 Conectando y extrayendo datos desde ${URL_AMARILLAS_QUILPUE}...`);

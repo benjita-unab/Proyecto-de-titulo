@@ -82,7 +82,7 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     comuna: 'Villa Alemana',
     esPuntoSeguro: true,
     tipoParada: 'Intermodal Metro, Microbús y Punto Seguro Taxi',
-    lineasAsociadas: 'Tren Limache-Puerto, C02, 108, Q02, 105-D, Radio Taxi Aracis Vía',
+    lineasAsociadas: 'Tren Limache-Puerto, C02, 108, Q02, 105-D, Colectivos Locales',
   },
   {
     idParada: 'PAR-VLM-02',

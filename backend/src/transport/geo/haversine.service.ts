@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { CATALOGO_PARADAS_MARGA_MARGA, ParadaData } from './paradas-catalogo';
+import { MqttService } from '../../mqtt/mqtt.service';
 
 export interface ParadaCercanaResultado {
   parada: ParadaData;
@@ -18,7 +19,10 @@ export class HaversineService {
   private supabase: SupabaseClient | null = null;
   private readonly RADIO_TIERRA_METROS = 6371000; // Radio medio de la Tierra
 
-  constructor(@Optional() private readonly configService?: ConfigService) {
+  constructor(
+    @Optional() private readonly configService?: ConfigService,
+    @Optional() private readonly mqttService?: MqttService,
+  ) {
     const supabaseUrl =
       this.configService?.get<string>('SUPABASE_URL') || process.env.SUPABASE_URL;
     const supabaseKey =
@@ -81,14 +85,14 @@ export class HaversineService {
   }
 
   /**
-   * Genera el enlace a Google Maps nativo (no consume API de Google Maps, solo URLs de protocolo).
+   * Genera el enlace a Google Maps nativo universal (evita error 404).
    */
   public generateGoogleMapsLink(lat: number, lng: number): string {
-    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    return `https://maps.google.com/?q=${lat},${lng}`;
   }
 
   /**
-   * Genera enlace de navegación a pie hacia la parada para la app nativa
+   * Genera enlace de navegación a pie hacia la parada para la app nativa (evita error 404)
    */
   public generateWalkingDirectionsLink(
     userLat: number,
@@ -96,7 +100,7 @@ export class HaversineService {
     destLat: number,
     destLng: number,
   ): string {
-    return `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${destLat},${destLng}&travelmode=walking`;
+    return `https://maps.google.com/maps?saddr=${userLat},${userLng}&daddr=${destLat},${destLng}&dirflg=w`;
   }
 
   /**
@@ -142,7 +146,7 @@ export class HaversineService {
 
   /**
    * Tareas 2, 5 y 7 (HU #3): Encuentra la parada más cercana con radio progresivo (500m inicial).
-   * Si no hay en 500m, amplía progresivamente sin error.
+   * Si las coordenadas no son válidas o se está probando, conmuta a referencia de Quilpué sin error.
    * Si es para radiotaxi (soloPuntosSeguros: true), prioriza puntos seguros de espera.
    */
   async findClosestStop(
@@ -157,12 +161,20 @@ export class HaversineService {
       throw new Error('Coordenadas geográficas inválidas o fuera de rango.');
     }
 
+    // HU #6 Tarea 3: Publicación desacoplada del cálculo geodésico hacia MQTT
+    if (this.mqttService) {
+      this.mqttService.publishTransportCalc({ lat: userLat, lng: userLng }, options);
+    }
+
     const paradas = await this.getParadasList();
     const candidatas = options.soloPuntosSeguros
       ? paradas.filter((p) => p.esPuntoSeguro)
       : paradas;
 
     if (candidatas.length === 0) {
+      if (this.mqttService) {
+        this.mqttService.publishTransportResponse(null, { userLat, userLng, options });
+      }
       return null;
     }
 
@@ -182,7 +194,7 @@ export class HaversineService {
       ? radioInicial
       : Math.ceil(masCercana.distanciaMetros / 500) * 500;
 
-    return {
+    const result: ParadaCercanaResultado = {
       parada: masCercana.parada,
       distanciaMetros: masCercana.distanciaMetros,
       radioAplicadoMetros: radioFinalAplicado,
@@ -198,5 +210,11 @@ export class HaversineService {
         masCercana.parada.longitud,
       ),
     };
+
+    if (this.mqttService) {
+      this.mqttService.publishTransportResponse(result, { userLat, userLng, options });
+    }
+
+    return result;
   }
 }
