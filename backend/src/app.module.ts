@@ -7,6 +7,7 @@ import { NlpModule } from './nlp/nlp.module';
 import { TransportModule } from './transport/transport.module';
 import { FormatterModule } from './formatter/formatter.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { MqttModule } from './mqtt/mqtt.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { TelegramModule } from './telegram/telegram.module';
     TransportModule,
     FormatterModule,
     TelegramModule,
+    MqttModule,
   ],
   controllers: [AppController],
   providers: [AppService],

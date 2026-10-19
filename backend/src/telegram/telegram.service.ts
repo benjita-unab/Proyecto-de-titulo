@@ -14,6 +14,21 @@ import { NlpService } from '../nlp/nlp.service';
 import { RutasService } from '../transport/rutas/rutas.service';
 import { HorariosService } from '../transport/horarios/horarios.service';
 import { TaxisService } from '../transport/taxis/taxis.service';
+import { HaversineService } from '../transport/geo/haversine.service';
+import { ComparativeFlowService } from '../chat/comparative-flow.service';
+import { GeminiService } from '../nlp/gemini.service';
+import { MqttService } from '../mqtt/mqtt.service';
+
+export const TECLADO_MOVITECH_TELEGRAM = {
+  keyboard: [
+    [{ text: '📍 Compartir mi ubicación', request_location: true }],
+    [{ text: '📍 Simular en Plaza Quilpué' }, { text: '📍 Simular en El Belloto' }],
+    [{ text: '🏥 Hospital de Quilpué' }, { text: '🏛️ Plaza de Quilpué' }],
+    [{ text: '🚉 Estación Quilpué' }, { text: '🚕 Ver Radio Taxis Quilpué' }],
+  ],
+  resize_keyboard: true,
+  one_time_keyboard: false,
+};
 
 @Injectable()
 export class TelegramService {
@@ -30,6 +45,10 @@ export class TelegramService {
     @Optional() private readonly horariosService?: HorariosService,
     @Optional() private readonly taxisService?: TaxisService,
     @Optional() private readonly audioTranscriptionService?: AudioTranscriptionService,
+    @Optional() private readonly haversineService?: HaversineService,
+    @Optional() private readonly comparativeFlowService?: ComparativeFlowService,
+    @Optional() private readonly geminiService?: GeminiService,
+    @Optional() private readonly mqttService?: MqttService,
   ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN') || '';
     this.webhookSecret =
@@ -76,6 +95,25 @@ export class TelegramService {
   public extractIncomingMessage(
     update: TelegramUpdate,
   ): ParsedTelegramMessage | null {
+    // 0. Detección de callback_query por clics en botones inline (HU #2 Tarea 5)
+    if (update?.callback_query) {
+      const cb = update.callback_query;
+      const senderName =
+        [cb.from?.first_name, cb.from?.last_name].filter(Boolean).join(' ') || 'Usuario';
+      const targetChatId = cb.message?.chat?.id || cb.from?.id;
+      return {
+        chatId: targetChatId,
+        text: cb.data || '',
+        messageId: cb.message?.message_id || 0,
+        senderName,
+        username: cb.from?.username,
+        date: Math.floor(Date.now() / 1000),
+        isVoice: false,
+        callbackData: cb.data,
+        callbackQueryId: cb.id,
+      };
+    }
+
     const rawMessage = update?.message || update?.edited_message;
 
     if (!rawMessage || !rawMessage.chat) {
@@ -86,7 +124,21 @@ export class TelegramService {
       .filter(Boolean)
       .join(' ') || 'Usuario';
 
-    // 1. Detección de notas de voz o archivos de audio (msg.voice o msg.audio)
+    // 1. Detección de eventos de ubicación GPS compartida (HU #3 Tarea 6)
+    if (rawMessage.location) {
+      return {
+        chatId: rawMessage.chat.id,
+        text: '',
+        messageId: rawMessage.message_id,
+        senderName,
+        username: rawMessage.from?.username,
+        date: rawMessage.date,
+        isVoice: false,
+        location: rawMessage.location,
+      };
+    }
+
+    // 2. Detección de notas de voz o archivos de audio (msg.voice o msg.audio)
     const voiceObj = rawMessage.voice || rawMessage.audio;
     if (voiceObj && voiceObj.file_id) {
       const captionText =
@@ -105,7 +157,7 @@ export class TelegramService {
       };
     }
 
-    // 2. Mensaje de texto directo o subtítulo/caption
+    // 3. Mensaje de texto directo o subtítulo/caption
     const rawText = typeof rawMessage.text === 'string' ? rawMessage.text : rawMessage.caption;
     if (typeof rawText === 'string') {
       const trimmedText = rawText.trim();
@@ -122,7 +174,7 @@ export class TelegramService {
       }
     }
 
-    // 3. Objeto de voz/audio sin file_id
+    // 4. Objeto de voz/audio sin file_id
     if (rawMessage.voice || rawMessage.audio) {
       return {
         chatId: rawMessage.chat.id,
@@ -155,6 +207,16 @@ export class TelegramService {
       return { processed: false };
     }
 
+    // HU #6 Tarea 3: Publicación desacoplada en MQTT al recibir el webhook
+    if (this.mqttService) {
+      this.mqttService.publish(this.mqttService.getIncomingTopic(), {
+        chatId: parsed.chatId,
+        text: parsed.text,
+        sender: parsed.senderName,
+        timestamp: Date.now(),
+      });
+    }
+
     if (parsed.isVoice) {
       this.logger.log(
         `[Telegram] Nota de voz detectada de ${parsed.senderName} (Chat ID: ${parsed.chatId}, File ID: ${parsed.fileId}). Iniciando descarga y transcripción.`,
@@ -183,8 +245,8 @@ export class TelegramService {
         `Por el momento atiendo mediante mensajes de voz o texto.\n\n` +
         `📍 <b>Puedes escribir directamente:</b>\n` +
         `• 🚌 <b>Recorridos:</b> "¿Cómo llego al Hospital de Quilpué?" o "Feria El Belloto"\n` +
-        `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Villa Alemana"\n` +
-        `• 🚕 <b>Radio Taxis:</b> "Taxis Quilpué" o "Radio Taxi Villa Alemana"\n\n` +
+        `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Quilpué"\n` +
+        `• 🚕 <b>Radio Taxis:</b> "Taxis Quilpué" o "Radio Taxi Quilpué"\n\n` +
         `<i>Escribe tu consulta con tranquilidad y te responderé de inmediato.</i>`;
 
       const sent = await this.sendMessage(parsed.chatId, voiceReply, 'HTML');
@@ -195,6 +257,75 @@ export class TelegramService {
         text: '[Nota de voz sin archivo]',
         sent,
       };
+    }
+
+    // HU #2 Tarea 5: Manejo de clics en botones de Inline Keyboard (Microbús, Colectivo, Radio Taxi)
+    if (parsed.callbackData) {
+      if (parsed.callbackQueryId) {
+        await this.answerCallbackQuery(parsed.callbackQueryId);
+      }
+      if (this.comparativeFlowService) {
+        this.logger.log(`[Telegram Callback] Selección recibida de ${parsed.senderName}: "${parsed.callbackData}"`);
+        const selection = await this.comparativeFlowService.processSelection(
+          parsed.chatId.toString(),
+          parsed.callbackData,
+        );
+        if (selection && selection.telegram) {
+          const sent = await this.sendMessage(
+            parsed.chatId,
+            selection.telegram.text,
+            (selection.telegram.parse_mode as any) || 'HTML',
+            (selection.telegram as any).reply_markup,
+          );
+          return {
+            processed: true,
+            chatId: parsed.chatId,
+            text: parsed.callbackData,
+            sent,
+          };
+        }
+      }
+    }
+
+    // HU #3 Tarea 6: Manejo de ubicación compartida por GPS (con soporte para pruebas en Limache)
+    if (parsed.location && this.haversineService && this.telegramFormatter) {
+      let { latitude, longitude } = parsed.location;
+      this.logger.log(`[Telegram Location] Ubicación recibida de ${parsed.senderName}: (${latitude}, ${longitude})`);
+
+      if (!this.haversineService.validateCoordinates(latitude, longitude)) {
+        const invalidMsg =
+          `⚠️ <b>Ubicación fuera de rango</b>\n\n` +
+          `No pudimos procesar las coordenadas recibidas. Por favor asegúrate de compartir tu ubicación dentro de la zona de Quilpué y alrededores.`;
+        const sent = await this.sendMessage(parsed.chatId, invalidMsg, 'HTML', TECLADO_MOVITECH_TELEGRAM);
+        return { processed: true, chatId: parsed.chatId, sent };
+      }
+
+      // Centro de referencia Quilpué (Plaza Manuel Blanco Encalada)
+      const PLAZA_QLP_LAT = -33.0480;
+      const PLAZA_QLP_LNG = -71.4425;
+      const distAlCentro = this.haversineService.calculateDistance(latitude, longitude, PLAZA_QLP_LAT, PLAZA_QLP_LNG);
+
+      let prefijoSimulacion = '';
+      // Si el usuario prueba desde Limache u otra ciudad a más de 4 km:
+      if (distAlCentro > 4000) {
+        this.logger.log(`[Telegram Simulation] Usuario en Limache o remoto (${Math.round(distAlCentro)}m de Quilpué). Activando simulación desde Quilpué Centro.`);
+        latitude = PLAZA_QLP_LAT;
+        longitude = PLAZA_QLP_LNG;
+        prefijoSimulacion = `🎬 <b>Modo Demostración Activo:</b>\n<i>Detectamos que te encuentras en Limache (a ${Math.round(distAlCentro / 1000)} km).\nPara tu video de demostración, simulamos tu salida desde <b>Plaza Manuel Blanco Encalada (Centro de Quilpué)</b>:</i>\n\n`;
+      }
+
+      const pendingDest = this.comparativeFlowService?.getSessionDestination(parsed.chatId.toString()) || undefined;
+
+      const closest = await this.haversineService.findClosestStop(latitude, longitude, {
+        radioInicialMetros: 500,
+      });
+
+      if (closest) {
+        const formatted = this.telegramFormatter.formatNearbyStopResponse(closest, pendingDest);
+        const replyText = prefijoSimulacion + formatted.text;
+        const sent = await this.sendMessage(parsed.chatId, replyText, 'HTML', TECLADO_MOVITECH_TELEGRAM);
+        return { processed: true, chatId: parsed.chatId, sent };
+      }
     }
 
     this.logger.log(
@@ -235,37 +366,155 @@ export class TelegramService {
     parseMode: 'HTML' | 'Markdown';
     latencyMs: number;
     intent?: string;
+    replyMarkup?: any;
   }> {
     const startTime = Date.now();
     let replyText = '';
     let parseMode: 'HTML' | 'Markdown' = preferredParseMode;
     let detectedIntent = 'unknown';
+    let replyMarkup: any = undefined;
 
-    if (this.nlpService && this.telegramFormatter) {
-      const queryResult = this.nlpService.processQuery(text);
-      const { intent, destination } = queryResult;
-      detectedIntent = intent;
+    // Disparar de inmediato la animación "MoviTech está escribiendo..." para mejorar la percepción de velocidad
+    this.sendChatAction(chatId, 'typing').catch(() => {});
 
+    // 0. Detección de selección interactiva directa por texto (ej: "1", "2", "3", "micro", "colectivo", "taxi", "sel_micro...")
+    if (this.comparativeFlowService && /^(1|2|3|micro|colectivo|taxi|opt_|sel_)/i.test(text.trim())) {
+      const selection = await this.comparativeFlowService.processSelection(
+        chatId.toString(),
+        text.trim(),
+      );
+      if (selection && selection.telegram) {
+        replyText = selection.telegram.text;
+        parseMode = (selection.telegram.parse_mode as any) || 'HTML';
+        replyMarkup = (selection.telegram as any).reply_markup;
+        detectedIntent = 'Seleccionar Transporte';
+      }
+    }
+
+    // 1. Detección de botones rápidos del teclado inferior (solo texto idéntico a los botones)
+    const trimmed = text.trim();
+    let quickDestination: string | null = null;
+    let quickIntent: string | null = null;
+
+    if (trimmed === '🏥 Hospital de Quilpué' || trimmed.toLowerCase() === 'hospital de quilpue' || trimmed.toLowerCase() === 'hospital de quilpué') {
+      quickDestination = 'Hospital de Quilpué';
+      quickIntent = 'Buscar Ruta';
+    } else if (trimmed === '🏛️ Plaza de Quilpué' || trimmed.toLowerCase() === 'plaza de quilpue' || trimmed.toLowerCase() === 'plaza de quilpué') {
+      quickDestination = 'Plaza de Quilpué';
+      quickIntent = 'Buscar Ruta';
+    } else if (trimmed === '🚉 Estación Quilpué' || trimmed.toLowerCase() === 'estacion quilpue' || trimmed.toLowerCase() === 'estación quilpué') {
+      quickDestination = 'Estación Metro Quilpué';
+      quickIntent = 'Buscar Ruta';
+    } else if (trimmed === '🎪 Feria El Belloto' || trimmed.toLowerCase() === 'feria el belloto') {
+      quickDestination = 'Feria El Belloto';
+      quickIntent = 'Buscar Ruta';
+    } else if (trimmed === '🚕 Ver Radio Taxis Quilpué') {
+      quickIntent = 'Consultar RadioTaxi';
+    } else if (
+      trimmed === '📍 Simular en Plaza Quilpué' ||
+      trimmed === '📍 Simular en El Belloto' ||
+      trimmed.startsWith('/simular')
+    ) {
+      if (this.haversineService && this.telegramFormatter) {
+        const isBelloto = trimmed.includes('Belloto');
+        const latSim = isBelloto ? -33.0510 : -33.0480;
+        const lngSim = isBelloto ? -71.4330 : -71.4425;
+        const nombreSim = isBelloto ? 'Feria El Belloto' : 'Plaza Manuel Blanco Encalada (Centro de Quilpué)';
+
+        const pendingDest = this.comparativeFlowService?.getSessionDestination(chatId.toString()) || 'Hospital de Quilpué';
+        const closest = await this.haversineService.findClosestStop(latSim, lngSim, { radioInicialMetros: 500 });
+        if (closest) {
+          const formatted = this.telegramFormatter.formatNearbyStopResponse(closest, pendingDest);
+          replyText =
+            `🎬 <b>Modo Demostración Activo:</b>\n` +
+            `<i>Simulando tu ubicación en: <b>${nombreSim}</b></i>\n\n` +
+            formatted.text;
+          parseMode = 'HTML';
+          replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+          detectedIntent = 'SimulacionUbicacion';
+        }
+      }
+    }
+
+    // 2. Inteligencia Artificial Gemini (Nivel 2): Modela la respuesta cálida y empática para adultos mayores
+    let aiRes: any = null;
+    if (!replyText && !text.startsWith('/')) {
+      if (quickDestination) {
+        // Respuesta pre-modelada inmediata para botones rápidos (latencia < 50ms)
+        aiRes = {
+          intent: 'Buscar Ruta',
+          destination: quickDestination,
+          comuna: 'Quilpué',
+          respuestaModelada: `¡Con gusto te ayudo a llegar a ${quickDestination}! Aquí tienes las mejores alternativas de transporte disponibles en Quilpué:`,
+          usandoFallback: false,
+          latenciaMs: 1,
+        };
+      } else if (quickIntent === 'Consultar RadioTaxi') {
+        aiRes = {
+          intent: 'Consultar RadioTaxi',
+          destination: null,
+          comuna: 'Quilpué',
+          respuestaModelada: 'Aquí tienes los números de las centrales de Radio Taxi autorizadas de Quilpué para llamar con un solo toque:',
+          usandoFallback: false,
+          latenciaMs: 1,
+        };
+      } else if (this.geminiService) {
+        // Consultas libres en lenguaje natural interpretadas en tiempo real por Gemini
+        try {
+          aiRes = await this.geminiService.interpretQuery(text, senderName);
+        } catch (err: any) {
+          this.logger.warn(`[Telegram] GeminiService no disponible: ${err.message}. Conmutando a NLP local.`);
+        }
+      }
+    }
+
+    // Clasificación de intención (con fallback a NlpService)
+    let intent: string = quickIntent || (aiRes && !aiRes.usandoFallback ? aiRes.intent : null);
+    let destination: string | null = quickDestination || (aiRes && !aiRes.usandoFallback ? aiRes.destination : null);
+    let lineaBuscada = aiRes?.linea;
+    let comuna = aiRes?.comuna || 'Quilpué';
+
+    if (!intent || intent === 'unknown') {
+      if (this.nlpService) {
+        const queryResult = this.nlpService.processQuery(text);
+        intent = intent || queryResult.intent;
+        destination = destination || queryResult.destination;
+        lineaBuscada = lineaBuscada || (queryResult as any).linea;
+        comuna = (queryResult as any).comuna || comuna;
+      }
+    }
+
+    detectedIntent = intent || 'unknown';
+
+    if (!replyText) {
       if (
         intent === 'Saludo' ||
         text.startsWith('/start') ||
         text.startsWith('/help')
       ) {
-        const welcome = this.telegramFormatter.formatWelcomeMessage(senderName);
-        replyText = welcome.text;
+        if (aiRes?.respuestaModelada && !text.startsWith('/start') && !text.startsWith('/help')) {
+          replyText =
+            `👋 <b>${this.telegramFormatter ? this.telegramFormatter.escapeHtml(aiRes.respuestaModelada) : aiRes.respuestaModelada}</b>\n\n` +
+            `📍 <i>Toca un destino abajo o usa <b>"📍 Compartir mi ubicación"</b> para ver paradas cercanas:</i>`;
+        } else {
+          const welcome = this.telegramFormatter
+            ? this.telegramFormatter.formatWelcomeMessage(senderName)
+            : { text: '¡Hola! Bienvenido a MoviTech.' };
+          replyText = welcome.text;
+        }
         parseMode = 'HTML';
-      } else if (intent === 'Consultar RadioTaxi' && this.taxisService) {
-        const comuna = (queryResult as any).comuna;
+        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+      } else if (intent === 'Consultar RadioTaxi' && this.taxisService && this.telegramFormatter) {
         const taxis = await this.taxisService.getCentralesRadioTaxi(comuna);
         const formatted = this.telegramFormatter.formatRadioTaxisResponse(taxis, comuna);
         replyText = formatted.text;
+        if (aiRes?.respuestaModelada) {
+          replyText = `🚕 <i>${this.telegramFormatter.escapeHtml(aiRes.respuestaModelada)}</i>\n\n` + replyText;
+        }
         parseMode = 'HTML';
-      } else if (intent === 'Consultar Horario' && this.horariosService) {
-        const lineaBuscada = (queryResult as any).linea;
-        const comuna = (queryResult as any).comuna;
-
+        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+      } else if (intent === 'Consultar Horario' && this.horariosService && this.telegramFormatter) {
         if (lineaBuscada) {
-          // Consulta detallada de una línea específica
           const dbHorarios = await this.horariosService.getHorariosPorLinea(lineaBuscada);
           const statusResult = this.horariosService.checkHorarioStatus(
             undefined,
@@ -276,23 +525,46 @@ export class TelegramService {
           replyText = formatted.text;
           parseMode = 'HTML';
         } else {
-          // Consulta general de horarios de una comuna o de todas las líneas
           const lineasResumen = this.horariosService.getLineasResumen(comuna);
           const formatted = this.telegramFormatter.formatHorariosGeneralesResponse(lineasResumen, comuna);
           replyText = formatted.text;
           parseMode = 'HTML';
         }
-      } else if (intent === 'Buscar Ruta' && destination && this.rutasService) {
-        // Consulta directa a capa de datos de rutas (Supabase / contingencia Limache)
-        const routes = await this.rutasService.getRoutesForDestination(destination);
-        const formatted = this.telegramFormatter.formatRouteResponse(
-          destination,
-          routes,
-          preferredParseMode,
-        );
-        replyText = formatted.text;
-        parseMode = formatted.parse_mode;
-      } else {
+        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+      } else if (intent === 'Buscar Ruta' && destination) {
+        // Enviar aviso y activar teclado nativo con botón de ubicación
+        const locationPrompt =
+          `📍 <b>Para encontrar tu parada más cercana y el mejor recorrido a ${destination}:</b>\n\n` +
+          `Toca el botón <b>"📍 Compartir mi ubicación"</b> aquí abajo o selecciona una de las ubicaciones rápidas.`;
+        await this.sendMessage(chatId, locationPrompt, 'HTML', TECLADO_MOVITECH_TELEGRAM);
+
+        if (this.comparativeFlowService) {
+          const comparative = await this.comparativeFlowService.generateComparativeSummary(
+            chatId.toString(),
+            destination,
+          );
+          replyText = comparative.telegramResponse.text;
+          if (aiRes?.respuestaModelada) {
+            replyText = `🚌 <i>${this.telegramFormatter ? this.telegramFormatter.escapeHtml(aiRes.respuestaModelada) : aiRes.respuestaModelada}</i>\n\n` + replyText;
+          }
+          parseMode = (comparative.telegramResponse.parse_mode as any) || 'HTML';
+          replyMarkup = (comparative.telegramResponse as any).reply_markup;
+        } else if (this.rutasService && this.telegramFormatter) {
+          const routes = await this.rutasService.getRoutesForDestination(destination);
+          const formatted = this.telegramFormatter.formatRouteResponse(
+            destination,
+            routes,
+            preferredParseMode,
+          );
+          replyText = formatted.text;
+          parseMode = formatted.parse_mode;
+          replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+        }
+      } else if (intent === 'AclaracionDestino' && (aiRes?.respuestaModelada || aiRes?.mensajeAclaracion)) {
+        replyText = aiRes.respuestaModelada || aiRes.mensajeAclaracion;
+        parseMode = 'HTML';
+        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+      } else if (this.telegramFormatter) {
         const fallback = this.telegramFormatter.formatRouteResponse(
           '',
           [],
@@ -300,16 +572,13 @@ export class TelegramService {
         );
         replyText = fallback.text;
         parseMode = fallback.parse_mode;
+        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
       }
-    } else if (this.telegramFormatter) {
-      const welcome = this.telegramFormatter.formatWelcomeMessage(senderName);
-      replyText = welcome.text;
-      parseMode = 'HTML';
     }
 
     let success = false;
     if (replyText && chatId) {
-      success = await this.sendMessage(chatId, replyText, parseMode);
+      success = await this.sendMessage(chatId, replyText, parseMode, replyMarkup);
     }
 
     const latencyMs = Date.now() - startTime;
@@ -329,6 +598,7 @@ export class TelegramService {
       parseMode,
       latencyMs,
       intent: detectedIntent,
+      replyMarkup,
     };
   }
 
@@ -339,6 +609,7 @@ export class TelegramService {
     chatId: number,
     text: string,
     parseMode: 'HTML' | 'Markdown' | 'MarkdownV2' = 'HTML',
+    replyMarkup?: any,
   ): Promise<boolean> {
     if (!this.botToken) {
       this.logger.error('No se puede enviar mensaje: TELEGRAM_BOT_TOKEN no definido.');
@@ -346,17 +617,88 @@ export class TelegramService {
     }
 
     try {
-      const response = await axios.post(`${this.telegramApiUrl}/sendMessage`, {
+      const payload: any = {
         chat_id: chatId,
         text,
         parse_mode: parseMode,
-      });
+      };
 
-      return response.data?.ok === true;
+      if (replyMarkup) {
+        payload.reply_markup = replyMarkup;
+      }
+
+      const response = await axios.post(`${this.telegramApiUrl}/sendMessage`, payload);
+      const isOk = response.data?.ok === true;
+
+      // HU #6 Tarea 3: Publicación desacoplada del mensaje saliente hacia MQTT
+      if (this.mqttService) {
+        this.mqttService.publishOutgoingResponse('telegram', {
+          chatId,
+          text,
+          parseMode,
+          hasKeyboard: !!replyMarkup,
+          ok: isOk,
+        });
+      }
+
+      return isOk;
     } catch (error: any) {
       this.logger.error(
         `Error al enviar mensaje a Telegram (Chat ID: ${chatId}): ${error?.response?.data?.description || error.message}`,
       );
+      if (this.mqttService) {
+        this.mqttService.publishOutgoingResponse('telegram', {
+          chatId,
+          text,
+          ok: false,
+          error: error.message,
+        });
+      }
+      return false;
+    }
+  }
+
+  /**
+   * Responde a una consulta de callback_query para quitar el icono de carga del botón en Telegram.
+   */
+  public async answerCallbackQuery(
+    callbackQueryId: string,
+    text?: string,
+  ): Promise<boolean> {
+    if (!this.botToken || !callbackQueryId) {
+      return false;
+    }
+
+    try {
+      const payload: any = { callback_query_id: callbackQueryId };
+      if (text) {
+        payload.text = text;
+      }
+      const response = await axios.post(`${this.telegramApiUrl}/answerCallbackQuery`, payload);
+      return response.data?.ok === true;
+    } catch (error: any) {
+      this.logger.warn(
+        `Error al responder callback_query a Telegram (ID: ${callbackQueryId}): ${error?.response?.data?.description || error.message}`,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Envía una acción de chat (ej: 'typing') para mostrar 'MoviTech está escribiendo...' de inmediato
+   */
+  public async sendChatAction(chatId: number, action: string = 'typing'): Promise<boolean> {
+    if (!this.botToken || !chatId) {
+      return false;
+    }
+
+    try {
+      const response = await axios.post(`${this.telegramApiUrl}/sendChatAction`, {
+        chat_id: chatId,
+        action,
+      });
+      return response.data?.ok === true;
+    } catch {
       return false;
     }
   }

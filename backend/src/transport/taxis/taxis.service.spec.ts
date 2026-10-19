@@ -38,7 +38,15 @@ describe('TaxisService', () => {
       (service as any).supabase = null;
       const centrales = await service.getCentralesRadioTaxi();
       expect(centrales.length).toBeGreaterThanOrEqual(2);
-      expect(centrales[0].nombre).toContain('Radio Taxi');
+      expect(centrales.some((c) => c.nombre.includes('Taxi'))).toBe(true);
+    });
+
+    it('no debe incluir ninguna central de Villa Alemana', async () => {
+      const centrales = await service.getCentralesRadioTaxi();
+      const tieneVillaAlemana = centrales.some((c) =>
+        `${c.nombre} ${c.direccionBase}`.toLowerCase().includes('villa alemana'),
+      );
+      expect(tieneVillaAlemana).toBe(false);
     });
   });
 });

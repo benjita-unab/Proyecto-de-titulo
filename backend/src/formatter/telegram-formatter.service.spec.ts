@@ -121,7 +121,7 @@ describe('TelegramFormatterService', () => {
     it('debe incluir el enlace funcional a Google Maps con destino codificado', () => {
       const result = service.formatRouteResponse('Plaza 40 Horas', [mockRoutes[0]]);
       expect(result.text).toContain(
-        'https://www.google.com/maps/dir/?api=1&amp;destination=Plaza%2040%20Horas%20Quilpue&amp;travelmode=transit',
+        'https://maps.google.com/?q=Plaza%2040%20Horas%20Quilpue',
       );
     });
 

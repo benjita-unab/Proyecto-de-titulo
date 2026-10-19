@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { NlpService } from './nlp.service';
+import { GeminiService } from './gemini.service';
 
 @Module({
-  providers: [NlpService],
-  exports: [NlpService],
+  imports: [ConfigModule],
+  providers: [NlpService, GeminiService],
+  exports: [NlpService, GeminiService],
 })
 export class NlpModule {}

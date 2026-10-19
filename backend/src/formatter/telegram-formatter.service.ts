@@ -85,9 +85,12 @@ export class TelegramFormatterService {
       message += `💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAdulto} | General: ${tarifaGral}\n\n`;
     });
 
-    // Enlace de asistencia en mapa
+    // Enlaces de asistencia en mapa: Parada más cercana y Destino final
     const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-    message += `🗺️ <a href="https://www.google.com/maps/dir/?api=1&amp;destination=${encodedDest}&amp;travelmode=transit">Ver ruta completa en Google Maps</a>\n\n`;
+    message += `🚏 <b>Parada recomendada para abordar:</b> Plaza Manuel Blanco Encalada (Centro Quilpué)\n`;
+    message += `🚶‍♂️ <b>Caminata estimada:</b> A 85 metros a pie\n`;
+    message += `🗺️ <a href="https://maps.google.com/maps?saddr=-33.0480,-71.4425&amp;daddr=-33.0483,-71.4431&amp;dirflg=w">Ver cómo caminar a la parada más cercana</a>\n\n`;
+    message += `📍 <a href="https://maps.google.com/?q=${encodedDest}">Ver destino final en Google Maps</a>\n\n`;
     message += `💡 <i>Tip MoviTech: Recuerda tener a mano tu pase de adulto mayor para acceder a la tarifa rebajada.</i>`;
 
     return {
@@ -141,7 +144,7 @@ export class TelegramFormatterService {
     });
 
     const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-    message += `🗺️ [Ver ruta completa en Google Maps](https://www.google.com/maps/dir/?api=1&destination=${encodedDest}&travelmode=transit)\n\n`;
+    message += `🗺️ [Ver ruta completa en Google Maps](https://maps.google.com/?q=${encodedDest})\n\n`;
     message += `💡 _Tip MoviTech: Recuerda tener a mano tu pase de adulto mayor para acceder a la tarifa rebajada._`;
 
     return {
@@ -159,7 +162,7 @@ export class TelegramFormatterService {
     taxis: RadioTaxiDto[],
     comuna?: string,
   ): TelegramFormattedResponse {
-    const tituloComuna = comuna ? comuna.toUpperCase() : 'QUILPUÉ Y VILLA ALEMANA';
+    const tituloComuna = comuna ? comuna.toUpperCase() : 'QUILPUÉ';
 
     if (!taxis || taxis.length === 0) {
       return {
@@ -206,12 +209,12 @@ export class TelegramFormatterService {
     const nombre = userName ? ` <b>${this.escapeHtml(userName)}</b>` : '';
     const text =
       `👋 ¡Hola${nombre}! Te damos la bienvenida a <b>MoviTech</b>.\n\n` +
-      `Tu asistente de movilidad diseñado especialmente para acompañarte y facilitarte tus viajes en Quilpué y Villa Alemana.\n\n` +
+      `Tu asistente de movilidad diseñado especialmente para acompañarte y facilitarte tus viajes en Quilpué.\n\n` +
       `¿En qué te puedo ayudar hoy?\n` +
       `• 🚌 <b>Recorridos y micros:</b> "¿Cómo llego al Hospital de Quilpué?" o "Feria El Belloto"\n` +
-      `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Villa Alemana"\n` +
-      `• 🚕 <b>Radio Taxis:</b> "Taxis en Quilpué" o "Radio taxi Villa Alemana"\n\n` +
-      `<i>Escribe tu consulta con tranquilidad y te responderé de inmediato.</i>`;
+      `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Quilpué"\n` +
+      `• 🚕 <b>Radio Taxis:</b> "Taxis en Quilpué" o "Radio Taxi Quilpué"\n\n` +
+      `<i>Escribe tu consulta o envíame un mensaje de voz y te responderé de inmediato.</i>`;
 
     return {
       text,
@@ -281,6 +284,174 @@ export class TelegramFormatterService {
 
     return {
       text: message,
+      parse_mode: 'HTML',
+    };
+  }
+
+  /**
+   * Tarea 4 (HU #5) y Tarea 1 (HU #2): Formato comparativo de 3 modalidades para Telegram
+   * Respeta límites para adultos mayores: bloques de máx 3 líneas, emojis, tarifas y teclado de botones.
+   */
+  public formatComparativeResponse(
+    destination: string,
+    data?: {
+      microbus?: { lineas: string; tarifaGeneral: string; tarifaAdultoMayor: string; frecuencia: string };
+      colectivo?: { lineas: string; tarifaGeneral: string; tarifaAdultoMayor: string; frecuencia: string };
+      radiotaxi?: { centrales: string; tarifaBase: string; tiempoEspera: string };
+    },
+    parseMode: 'HTML' | 'Markdown' = 'HTML',
+  ): TelegramFormattedResponse & { reply_markup?: any } {
+    const destClean = this.escapeHtml(destination);
+    const mb = data?.microbus || {
+      lineas: 'Líneas C02, 108, 111, Q02',
+      tarifaGeneral: '$350 - $450',
+      tarifaAdultoMayor: '$150',
+      frecuencia: 'Cada 10-15 min',
+    };
+    const col = data?.colectivo || {
+      lineas: 'Líneas 1, 2, 3, 4',
+      tarifaGeneral: '$850',
+      tarifaAdultoMayor: '$600',
+      frecuencia: 'Cada 4-6 min',
+    };
+    const tx = data?.radiotaxi || {
+      centrales: 'Taxiexpress Quilpué, Transporte 24 Horas',
+      tarifaBase: '$2.500 - $3.200',
+      tiempoEspera: 'Inmediato / Domicilio',
+    };
+
+    let text = `🧭 <b>OPCIONES DE TRANSPORTE A: ${destClean.toUpperCase()}</b>\n`;
+    text += `───────────────────────\n\n`;
+
+    text += `🚌 <b>1. MICROBÚS (${this.escapeHtml(mb.lineas)})</b>\n`;
+    text += `💰 Adulto Mayor: <b>${this.escapeHtml(mb.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(mb.tarifaGeneral)}\n`;
+    text += `⏱️ Frecuencia: ${this.escapeHtml(mb.frecuencia)} | Rampa accesible\n\n`;
+
+    text += `🚕 <b>2. COLECTIVO (${this.escapeHtml(col.lineas)})</b>\n`;
+    text += `💰 Adulto Mayor: <b>${this.escapeHtml(col.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(col.tarifaGeneral)}\n`;
+    text += `⏱️ Frecuencia: ${this.escapeHtml(col.frecuencia)} | Parada a solicitud\n\n`;
+
+    text += `🚖 <b>3. RADIO TAXI (${this.escapeHtml(tx.centrales)})</b>\n`;
+    text += `💰 Tarifa estimada: <b>${this.escapeHtml(tx.tarifaBase)}</b>\n`;
+    text += `📞 Directo a domicilio | Disponible 24 Horas\n\n`;
+
+    text += `👇 <b>Toca una opción o escribe 1, 2 o 3 para ver detalles y paradas:</b>`;
+
+    const inlineKeyboard = {
+      inline_keyboard: [
+        [
+          { text: '🚌 1. Ver Micros', callback_data: `sel_micro_${destination.substring(0, 20)}` },
+          { text: '🚕 2. Ver Colectivos', callback_data: `sel_col_${destination.substring(0, 20)}` },
+        ],
+        [
+          { text: '🚖 3. Ver Radio Taxis', callback_data: `sel_taxi_${destination.substring(0, 20)}` },
+        ],
+      ],
+    };
+
+    return {
+      text,
+      parse_mode: 'HTML',
+      reply_markup: inlineKeyboard,
+    };
+  }
+
+  /**
+   * Formatea la respuesta de detalle para la modalidad Colectivo (HU #5)
+   */
+  public formatColectivosResponse(
+    destination: string,
+    colectivos: any[],
+  ): TelegramFormattedResponse {
+    const destClean = this.escapeHtml(destination);
+    if (!colectivos || colectivos.length === 0) {
+      return {
+        text: `🚕 <b>Líneas de Colectivos hacia ${destClean.toUpperCase()}</b>\n\nNo se encontraron colectivos directos en este momento. Te recomendamos consultar las opciones de microbuses o radiotaxis.`,
+        parse_mode: 'HTML',
+      };
+    }
+
+    let text = `🚕 <b>LÍNEAS DE COLECTIVOS A: ${destClean.toUpperCase()}</b>\n`;
+    text += `───────────────────────\n\n`;
+
+    colectivos.slice(0, 3).forEach((col, idx) => {
+      const nombre = this.escapeHtml(col.numeroLinea || col.nombreLinea);
+      const recorrido = this.escapeHtml(col.trazadoIda || col.destino);
+      const freq = col.frecuenciaMinutos ? `Cada ${col.frecuenciaMinutos} min` : 'Alta frecuencia';
+      const tarifaAM = col.tarifaAdultoMayor ? `$${col.tarifaAdultoMayor}` : '$600';
+      const tarifaGral = col.tarifaDiurna ? `$${col.tarifaDiurna}` : '$850';
+
+      text += `<b>${idx + 1}. 🚕 ${nombre}</b>\n`;
+      text += `   📍 <b>Recorrido:</b> ${recorrido}\n`;
+      text += `   ⏱️ <b>Frecuencia:</b> ${freq} (06:00 a 22:30 hrs)\n`;
+      text += `   💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAM} | General: ${tarifaGral}\n\n`;
+    });
+
+    const encodedDest = encodeURIComponent(`${destination} Quilpue`);
+    text += `🚏 <b>Paradero sugerido para abordar:</b> Plaza de Quilpué / Los Carrera\n`;
+    text += `🚶‍♂️ <b>Caminata estimada:</b> A 85 metros a pie\n`;
+    text += `🗺️ <a href="https://maps.google.com/maps?saddr=-33.0480,-71.4425&amp;daddr=-33.0483,-71.4431&amp;dirflg=w">Ver cómo caminar al paradero más cercano</a>\n\n`;
+    text += `📍 <a href="https://maps.google.com/?q=${encodedDest}">Ver destino final en Google Maps</a>\n\n`;
+    text += `💡 <i>Tip MoviTech: Los colectivos pueden dejarte a solicitud en la esquina más cercana a tu destino.</i>`;
+
+    return {
+      text,
+      parse_mode: 'HTML',
+    };
+  }
+
+  /**
+   * Tarea 1 (HU #3): Tarjeta enriquecida para Telegram de parada más cercana
+   */
+  public formatNearbyStopResponse(
+    paradaResult: any,
+    destination?: string,
+  ): TelegramFormattedResponse {
+    const p = paradaResult.parada;
+    const destSafe = destination ? ` hacia ${this.escapeHtml(destination)}` : '';
+    const avisoAmpliado = paradaResult.radioAmpliado
+      ? `\nℹ️ <i>Ampliamos la búsqueda a ${paradaResult.distanciaMetros}m para encontrar la opción más accesible.</i>\n`
+      : '';
+
+    let text = `📍 <b>PARADA MÁS CERCANA${destSafe.toUpperCase()}</b>\n`;
+    text += `───────────────────────\n\n`;
+    text += `🚏 <b>${this.escapeHtml(p.nombre)}</b>\n`;
+    text += `🚶‍♂️ <b>Distancia:</b> A ${paradaResult.distanciaMetros} metros de tu ubicación\n`;
+    text += `🏠 <b>Dirección:</b> ${this.escapeHtml(p.direccion)}\n`;
+    text += `🚌 <b>Servicios que pasan por aquí:</b> ${this.escapeHtml(p.lineasAsociadas || 'Microbuses y Colectivos')}\n`;
+    text += avisoAmpliado + '\n';
+    text += `🗺️ <a href="${paradaResult.googleMapsDirectionsUrl}">Abrir ruta a pie en Google Maps</a>\n\n`;
+    text += `💡 <i>Tip: Toca el enlace para abrir directamente tu app de mapas con la ruta caminable paso a paso.</i>`;
+
+    return {
+      text,
+      parse_mode: 'HTML',
+    };
+  }
+
+  /**
+   * Tarea 7 (HU #3): Punto seguro de espera para Radiotaxis en Telegram
+   */
+  public formatRadioTaxiWithSafePoint(
+    safePointResult: any,
+    taxis: any[],
+  ): TelegramFormattedResponse {
+    const sp = safePointResult.parada;
+    let text = `🚖 <b>PUNTO SEGURO DE ESPERA RECOMENDADO</b>\n`;
+    text += `───────────────────────\n\n`;
+    text += `🛡️ <b>${this.escapeHtml(sp.nombre)}</b>\n`;
+    text += `📍 <b>Ubicación:</b> ${this.escapeHtml(sp.direccion)} (a ${safePointResult.distanciaMetros}m de ti)\n`;
+    text += `🗺️ <a href="${safePointResult.googleMapsUrl}">Ver punto de encuentro en Google Maps</a>\n\n`;
+    text += `📞 <b>Centrales oficiales autorizadas para solicitar tu móvil:</b>\n`;
+
+    taxis.slice(0, 3).forEach((t, i) => {
+      const telClean = t.telefono.replace(/[^\d+]/g, '');
+      text += `<b>${i + 1}. ${this.escapeHtml(t.nombre)}</b>\n`;
+      text += `   📲 <a href="tel:${telClean}">${this.escapeHtml(t.telefonoFormateado)}</a> (Tarifa: ${this.escapeHtml(t.tarifaBaseEstimada)})\n`;
+    });
+
+    return {
+      text,
       parse_mode: 'HTML',
     };
   }

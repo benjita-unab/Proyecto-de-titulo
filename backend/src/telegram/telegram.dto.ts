@@ -24,6 +24,18 @@ export class TelegramVoiceDto {
   file_size?: number;
 }
 
+export class TelegramLocationDto {
+  latitude: number;
+  longitude: number;
+}
+
+export class TelegramCallbackQueryDto {
+  id: string;
+  from: TelegramUserDto;
+  message?: TelegramMessageDto;
+  data?: string;
+}
+
 export class TelegramMessageDto {
   message_id: number;
   from?: TelegramUserDto;
@@ -33,6 +45,7 @@ export class TelegramMessageDto {
   caption?: string;
   voice?: TelegramVoiceDto;
   audio?: TelegramVoiceDto;
+  location?: TelegramLocationDto;
 }
 
 export class TelegramUpdateDto {
@@ -41,6 +54,7 @@ export class TelegramUpdateDto {
   edited_message?: TelegramMessageDto;
   channel_post?: TelegramMessageDto;
   edited_channel_post?: TelegramMessageDto;
+  callback_query?: TelegramCallbackQueryDto;
 }
 
 export interface ParsedTelegramMessage {
@@ -54,6 +68,9 @@ export interface ParsedTelegramMessage {
   fileId?: string;
   mimeType?: string;
   duration?: number;
+  location?: TelegramLocationDto;
+  callbackData?: string;
+  callbackQueryId?: string;
 }
 
 export class TelegramWebhookResponseDto {

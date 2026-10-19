@@ -31,7 +31,7 @@ describe('FormatterService', () => {
       expect(response.text).toContain('Aquí tienes opciones para llegar a hospital');
       expect(response.text).toContain('🚌 *Línea 1*');
       expect(response.text).toContain('Pasa por: Calle A.');
-      expect(response.text).toContain('https://www.google.com/maps/dir/?api=1&destination=hospital%20Quilpue&travelmode=transit');
+      expect(response.text).toContain('https://maps.google.com/?q=hospital%20Quilpue');
     });
 
     it('debe retornar una respuesta amigable y guiada por destino no reconocido', () => {
