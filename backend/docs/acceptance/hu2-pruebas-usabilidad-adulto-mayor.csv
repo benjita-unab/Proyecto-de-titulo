@@ -1,0 +1,11 @@
+ID;Tarea de Usabilidad;Objetivo Evaluado;Instrucción al Adulto Mayor;Tarea Completada;Tiempo Empleado (s);Cantidad Intentos;Nivel Frustración (1-5);Comentarios del Usuario
+1;Viaje al Hospital (opción económica);Identificar y elegir microbús por tarifa preferencial senior;Pregunta cómo ir al Hospital de Quilpué y elige la opción que cueste menos dinero;Sí;28;1;1;Muy clarita la letra y el precio de $150 con pase
+2;Viaje a la Feria (opción rápida);Identificar y elegir colectivo por frecuencia de 4 min;Pregunta cómo llegar a la Feria El Belloto y elige la opción que pase más seguido;Sí;32;1;1;Los botones grandes ayudan mucho a no equivocarse
+3;Llamar a Radio Taxi por urgencia;Identificar y presionar botón de llamada telefónica directa;Pide un taxi para volver a casa y presiona el número para llamar a la central;Sí;22;1;1;Marcó el teléfono al tiro sin tener que anotarlo en papel
+4;Consulta por número directo ("2");Interacción numérica abreviada;En vez de escribir la palabra, responde con el número 2 cuando te pregunte;Sí;18;1;1;Mucho más fácil escribir solo un número
+5;Consulta con lenguaje natural conversacional;Comprensión de modismos y texto largo;Escribe o di por audio: "mijito, cómo me voy a los pinos en colectivo";Sí;35;2;2;Al principio dudé si me entendería pero me dio la Línea 3
+6;Apertura de mapa peatonal;Navegación espacial accesible;Presiona el enlace azul para ver el mapa de cómo caminar hacia el paradero;Sí;41;1;2;Se abrió el mapa de Google sin pedirme contraseñas
+7;Cambio de opinión / reintento;Flexibilidad del flujo interactivo;Pide ir a Valencia, mira las micros y luego pide ver los colectivos;Sí;46;2;2;Pude retroceder y ver el otro transporte sin enredarme
+8;Consulta en horario nocturno;Comprensión de variación tarifaria nocturna;Pregunta por colectivos a Belloto tarde en la noche (23:30 hrs);Sí;39;1;1;Se nota clarito que de noche sale $1.100
+9;Uso de botones táctiles en pantalla;Interacción táctil vs teclado virtual;Toca con el dedo el botón 'Ver Micros' en lugar de usar el teclado;Sí;20;1;1;Excelente para quienes nos cuesta tipear en teclas chicas
+10;Lectura de frecuencia y paradero;Comprensión cognitiva sin sobrecarga;Lee en voz alta a qué distancia está el paradero y cada cuántos minutos pasa;Sí;25;1;1;Texto conciso, sin tecnicismos enredados
