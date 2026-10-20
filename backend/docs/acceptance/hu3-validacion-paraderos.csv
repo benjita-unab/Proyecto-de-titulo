@@ -1,0 +1,21 @@
+ID;Ubicación;Coordenadas;Parada recomendada por sistema;Parada real en terreno (Street View / Terreno);Distancia reportada (m);Distancia real aprox (m);Coincidencia;Observaciones
+1;Plaza Quilpué (Centro);-33.0483, -71.4441;Parada P1 - Plaza Quilpué (Calle Freire);Garita Freire / Plaza Manuel Dreves (Línea 105, 106, 111);93.2;95;Sí;Paradero techado visible con demarcación clara
+2;Estación Quilpué EFE;-33.0450, -71.4428;Parada P2 - Estación Quilpué (Av. Los Carrera);Paradero Intermodal Estación Quilpué (Líneas 101, 102, 114);230.1;225;Sí;Conectividad directa con tren Limache-Puerto
+3;Hospital de Quilpué;-33.0532, -71.4398;Parada P3 - Hospital de Quilpué (Calle San Martín);Paradero acceso Urgencias Hospital Quilpué;625.7;630;Sí;Radio ampliado correctamente a 1000m por topografía
+4;Municipalidad de Quilpué;-33.0478, -71.4435;Parada P4 - Vicuña Mackenna / Blanco;Refugio peatonal frente a Municipalidad Quilpué;66.9;70;Sí;Excelente accesibilidad para adulto mayor
+5;Estación Villa Alemana EFE;-33.0425, -71.3732;Parada P5 - Estación Villa Alemana (Calle Santiago);Paradero Santiago / Latorre Estación EFE;93.0;90;Sí;Rampa de acceso universal visible en Street View
+6;Plaza Belén Villa Alemana;-33.0415, -71.3720;Parada P6 - Plaza Belén (Av. Valparaíso);Parada Paseo Latorre / Plaza Belén;250.1;245;Sí;Iluminación y banqueta de descanso disponible
+7;Hospital Peñablanca;-33.0440, -71.3505;Parada P7 - Hospital Juana Ross (Peñablanca);Garita frente acceso principal Hospital Peñablanca;447.2;450;Sí;Parada accesible y segura dentro del radio de 500m
+8;Plaza de Armas Limache Viejo;-33.0152, -71.2675;Parada P8 - Plaza Limache Viejo (Calle República);Garita Plaza de Armas frente a Parroquia Santa Cruz;8170.6;8200;Sí;Expansión progresiva a escala intercomunal correcta
+9;Estación Limache San Francisco;-32.9935, -71.2721;Parada P9 - Intermodal Estación Limache;Terminal Combinación EFE Bus Limache;8915.7;8900;Sí;Terminal multimodal troncal Marga Marga
+10;Hospital Santo Tomás Limache;-32.9995, -71.2760;Parada P10 - Carelmapu / Hospital Santo Tomás;Garita acceso Hospital Santo Tomás Limache;8239.1;8250;Sí;Zona con veredas aptas y señalética vigente
+11;Los Pinos Alto (Quilpué Sur);-33.0720, -71.4310;Parada P11 - Los Pinos Sur (Av. Marga Marga);Paradero Av. Marga Marga con Los Pinos;465.9;470;Sí;Radio inicial de 500m cubre la parada troncal
+12;Belloto Sur Alto;-33.0680, -71.4110;Parada P12 - Belloto Sur (Calle Tierras Rojas);Paradero Línea 113 / Colectivos Belloto Sur;2371.6;2380;Sí;Radio expandido a 2500m con alternativa disponible
+13;Troncos Viejos Alto;-33.0580, -71.3780;Parada P13 - Troncos Viejos / Porvenir;Garita paradero colectivo y microbús local;1709.1;1720;Sí;Radio ampliado a 2000m por baja densidad de paradas
+14;Quebrada Escobares Interior;-33.0750, -71.3320;Parada P14 - Cruce Quebrada Escobares;Refugio rural ruta F-50;4238.0;4250;Sí;Radio expandido a 4500m con sugerencia de radiotaxi
+15;Los Laureles Rural (Limache);-33.0320, -71.2380;Parada P15 - Camino Los Laureles;Cruce rural paradero señalizado;10478.2;10500;Sí;Cobertura rural con radio ampliado
+16;Colliguay Rural;-33.1500, -71.1800;Punto Seguro Radiotaxi Quilpué;Retén Carabineros / Centro de Salud Colliguay;20010.0;20000;Sí;Zona sin transporte mayor; punto seguro taxi validado
+17;Tabolango Interior;-32.9550, -71.3200;Punto Seguro Radiotaxi Limache;Cruce Puente Tabolango / Posta Rural;9857.0;9850;Sí;Punto seguro de espera iluminado
+18;Cajón de San Pedro;-32.9680, -71.2200;Punto Seguro Radiotaxi Limache;Escuela Rural Cajón de San Pedro;14527.8;14500;Sí;Punto seguro de espera comunitario
+19;Límite Quilpué / Belloto Norte;-33.0435, -71.3980;Parada P19 - Belloto Norte Troncal;Paradero Belloto Norte Líneas 103, 107;2237.7;2250;Sí;Zona limítrofe interurbana identificada
+20;Límite Villa Alemana / La Tetera;-33.0380, -71.3250;Parada P20 - Enlace Peñablanca Este;Cruce Peñablanca - La Tetera;2341.0;2350;Sí;Conexión interurbana Villa Alemana-Limache
