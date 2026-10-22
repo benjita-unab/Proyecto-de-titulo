@@ -1,0 +1,31 @@
+ID;Consulta de Usuario;Intención Detectada;Tono y Amabilidad (1-5);Precisión Información (1-5);Claridad y Formato (1-5);Utilidad Práctica (1-5);Promedio Ponderado;Aprobado;Observaciones del Evaluador
+1;mijito, qué micro me sirve para ir al hospital de Quilpué;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Tono filial y respetuoso, entrega líneas C03 y 111 con acceso peatonal
+2;a qué hora pasa la última micro a Quilpué de la línea C02;Consultar Horario;5.0;5.0;5.0;5.0;5.00;Sí;Informa franja horaria clara (hasta las 22:30 hrs)
+3;necesito ir a la Estación Metro Quilpué para hacer un trámite;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Reconoce intermodal EFE y enlace a mapas
+4;cómo llego a la Plaza de Quilpué a cobrar la pensión;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Empatía con trámite de pensión y paraderos planos
+5;quiero saber el horario de la micro 111;Consultar Horario;4.8;5.0;5.0;4.8;4.90;Sí;Detalla frecuencia cada 12 min en horario diurno
+6;dónde puedo tomar colectivo a Los Pinos;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Recomienda Línea 3 y paradero Los Carrera
+7;me puedes dar el número de un radiotaxi en Quilpué por favor;Consultar RadioTaxi;5.0;5.0;5.0;5.0;5.00;Sí;Entrega botón de llamada directa a Taxiexpress
+8;cómo ir al Cesfam de Pompeya en micro;Buscar Ruta;4.8;5.0;4.8;5.0;4.90;Sí;Identifica sector Pompeya y rampa de acceso
+9;hola buenas tardes, quiero ir a Belloto Sur;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Saludo devuelto con cortesía y líneas de Belloto
+10;a qué hora empieza a pasar la micro Q02 en la mañana;Consultar Horario;4.8;5.0;5.0;5.0;4.95;Sí;Indica inicio 06:00 AM
+11;necesito un taxi en Villa Alemana para una emergencia;Consultar RadioTaxi;5.0;5.0;5.0;5.0;5.00;Sí;Prioriza centrales locales 24h de Villa Alemana
+12;cómo llegar a Valencia desde el centro;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Identifica eje Los Carrera y micro local
+13;qué micro me deja en Peñablanca;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Identifica línea troncal hacia Peñablanca
+14;hola mijita, necesito ir a Belloto Norte;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Respuesta cariñosa y opción de Línea 1
+15;quiero ir a la Plaza 40 Horas de Limache;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Conexión interurbana Quilpué - Limache
+16;vamos pa la feria el belloto a comprar verduritas;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Comprende modismo 'pa la feria' y sugiere colectivo
+17;dónde está la garita de los colectivos en el centro;Buscar Ruta;5.0;5.0;5.0;5.0;5.00;Sí;Ubica garita en Plaza Quilpué
+18;a qué hora pasa la última liebre para el cerro;Consultar Horario;4.8;4.8;5.0;4.8;4.85;Sí;Entiende término 'liebre' como microbús local
+19;un radiotaxi de confianza que no me deje botado en la noche;Consultar RadioTaxi;5.0;5.0;5.0;5.0;5.00;Sí;Ofrece centrales formales y seguras
+20;mijito me deja en el paradero del consultorio de Quilpué;Buscar Ruta;4.8;5.0;4.8;5.0;4.90;Sí;Mapea consultorio con Hospital/Cesfam de Quilpué
+21;quiero ir a dar una vuelta por ahí;AclaracionDestino;4.8;4.5;4.8;4.5;4.65;Sí;Pide aclaración con paciencia sugiriendo plazas
+22;dónde me deja la micro si me subo ahora;AclaracionDestino;4.8;4.5;4.8;4.5;4.65;Sí;Pregunta educadamente cuál es el destino planeado
+23;necesito viajar pero no sé qué micro pasa;AclaracionDestino;5.0;4.8;5.0;4.8;4.90;Sí;Ofrece guía paso a paso y opciones frecuentes
+24;a qué hora pasa;Consultar Horario;4.8;4.8;4.8;4.8;4.80;Sí;Indica horarios generales y consulta línea específica
+25;cómo me voy;AclaracionDestino;5.0;4.8;5.0;4.8;4.90;Sí;Pregunta amablemente hacia dónde se dirige el usuario
+26;cómo está el clima hoy en Limache;unknown;4.5;4.5;4.8;4.5;4.58;Sí;Informa con amabilidad que su foco es el transporte
+27;dame una receta para hacer cazuela de vacuno con choclo;unknown;4.5;4.5;4.8;4.5;4.58;Sí;Reorienta con simpatía hacia paraderos y micros
+28;quién ganó el partido de fútbol anoche;unknown;4.5;4.5;4.8;4.5;4.58;Sí;Trato deferente sin tecnicismos
+29;a cuánto está el dólar en el banco estado hoy;unknown;4.5;4.5;4.8;4.5;4.58;Sí;Respuesta cordial delimitando asistencia de transporte
+30;cuéntame un chiste simpático para alegrar el día;unknown;4.8;4.5;4.8;4.5;4.65;Sí;Mantiene calidez humana y ofrece ayuda de movilidad
