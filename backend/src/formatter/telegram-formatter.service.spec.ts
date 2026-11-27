@@ -193,7 +193,8 @@ describe('TelegramFormatterService', () => {
 
     it('debe manejar contingencia ante lista vacía o indefinida', () => {
       const result = service.formatRadioTaxisResponse([]);
-      expect(result.text).toContain('En este momento no hay información de bases disponibles');
+      expect(result.text).toContain('contacto y autorización verificados');
+      expect(result.text).toContain('no mostraremos números sin confirmar');
     });
   });
 

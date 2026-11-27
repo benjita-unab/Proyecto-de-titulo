@@ -31,6 +31,10 @@ export interface RecorridoTransporteModel {
   frecuencia: string;
   pasa_hospital_quilpue: boolean;
   activo: boolean;
+  verificado?: boolean;
+  fuente_url?: string | null;
+  evidencia_fuente?: string | null;
+  fecha_verificacion?: string | null;
 }
 
 export interface ColectivoModel {
@@ -53,6 +57,10 @@ export interface ColectivoModel {
   paraderos_principales: string;
   pasa_hospital_quilpue: boolean;
   activo: boolean;
+  verificado?: boolean;
+  fuente_url?: string | null;
+  evidencia_fuente?: string | null;
+  fecha_verificacion?: string | null;
 }
 
 export interface HorarioServicioModel {
@@ -77,6 +85,10 @@ export interface ParadaModel {
   tipo_parada: string;
   lineas_asociadas: string;
   activo: boolean;
+  verificado?: boolean;
+  fuente_url?: string | null;
+  evidencia_fuente?: string | null;
+  fecha_verificacion?: string | null;
 }
 
 export interface RecorridoParadaModel {
@@ -102,6 +114,10 @@ export interface ServicioRadioTaxiModel {
   horario_atencion: string;
   autorizada: boolean;
   activo: boolean;
+  verificado?: boolean;
+  fuente_url?: string | null;
+  evidencia_fuente?: string | null;
+  fecha_verificacion?: string | null;
 }
 
 export interface UnifiedSqliteSnapshot {

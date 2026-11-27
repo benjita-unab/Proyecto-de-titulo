@@ -17,64 +17,59 @@ describe('ColectivosService', () => {
   });
 
   describe('getColectivos', () => {
-    it('debe devolver todas las líneas de colectivos de contingencia si no se especifica filtro', async () => {
+    it('no publica el catálogo local que carece de fuentes verificadas', async () => {
       const colectivos = await service.getColectivos();
       expect(colectivos).toBeDefined();
-      expect(Array.isArray(colectivos)).toBe(true);
-      expect(colectivos.length).toBeGreaterThanOrEqual(5);
-
-      colectivos.forEach((c) => {
-        expect(c.numeroLinea).toBeDefined();
-        expect(c.nombreLinea).toBeDefined();
-        expect(c.tarifaAdultoMayor).toBeGreaterThan(0);
-        expect(c.tarifaDiurna).toBeGreaterThan(0);
-        expect(c.horarioInicio).toBeDefined();
-        expect(c.horarioTermino).toBeDefined();
-      });
+      expect(colectivos).toEqual([]);
     });
 
-    it('debe filtrar colectivos por destino relevante (ej. Los Pinos o Belloto)', async () => {
-      const pinos = await service.getColectivos('Los Pinos');
-      expect(pinos.length).toBeGreaterThan(0);
-      expect(pinos.some((c) => c.destino.toLowerCase().includes('pinos') || c.trazadoIda.toLowerCase().includes('pinos'))).toBe(true);
+    it('publica sólo registros de Supabase con evidencia y fuente HTTPS', async () => {
+      const verifiedRecord = {
+        id_colectivo: 'COL-TEST',
+        numero_linea: 'Línea verificada',
+        nombre_linea: 'Línea verificada',
+        comuna: 'Quilpué',
+        origen: 'Origen',
+        destino: 'Los Pinos',
+        trazado_ida: 'Origen a Los Pinos',
+        trazado_regreso: 'Los Pinos a Origen',
+        frecuencia_minutos: 10,
+        horario_inicio: '06:00',
+        horario_termino: '22:00',
+        tarifa_diurna: 900,
+        tarifa_nocturna: 1100,
+        tarifa_adulto_mayor: 450,
+        accesible_adulto_mayor: true,
+        paraderos_principales: 'Centro',
+        verificado: true,
+        fuente_url: 'https://mtt.gob.cl/registro',
+        evidencia_fuente: 'Línea verificada: Origen a Los Pinos',
+      };
+      const query: any = {
+        select: jest.fn(),
+        eq: jest.fn(),
+        not: jest.fn(),
+      };
+      query.select.mockReturnValue(query);
+      query.eq.mockReturnValue(query);
+      query.not.mockReturnValue(query);
+      query.then = (resolve: (value: any) => void) =>
+        resolve({ data: [verifiedRecord], error: null });
+      (service as any).supabase = {
+        from: jest.fn().mockReturnValue(query),
+      };
 
-      const belloto = await service.getColectivos('Belloto');
-      expect(belloto.length).toBeGreaterThan(0);
-    });
-
-    it('debe soportar busqueda sin acentos ni distincion de mayusculas', async () => {
-      const resAcento = await service.getColectivos('quilpue');
-      const resMayus = await service.getColectivos('QUILPUÉ');
-      expect(resAcento.length).toBe(resMayus.length);
-      expect(resAcento.length).toBeGreaterThan(0);
-    });
-
-    it('debe usar catalogo de contingencia si Supabase no esta disponible o falla', async () => {
-      (service as any).supabase = null;
-      const colectivos = await service.getColectivos();
-      expect(colectivos.length).toBeGreaterThanOrEqual(5);
-      expect(colectivos[0].comuna).toBe('Quilpué');
+      const colectivos = await service.getColectivos('Los Pinos');
+      expect(colectivos).toHaveLength(1);
+      expect(colectivos[0].fuenteUrl).toBe('https://mtt.gob.cl/registro');
+      expect(query.eq).toHaveBeenCalledWith('verificado', true);
     });
   });
 
   describe('getPuntosEsperaColectivo', () => {
-    it('debe devolver todos los puntos de espera si no se especifica linea', () => {
+    it('no publica puntos de espera sin verificación de fuente', () => {
       const paradas = service.getPuntosEsperaColectivo();
-      expect(paradas.length).toBeGreaterThanOrEqual(5);
-      paradas.forEach((p) => {
-        expect(p.idParada).toBeDefined();
-        expect(p.latitud).toBeLessThan(0);
-        expect(p.longitud).toBeLessThan(0);
-        expect(p.lineaColectivo).toBeDefined();
-      });
-    });
-
-    it('debe filtrar puntos de espera asociados a una linea especifica', () => {
-      const paradasLinea1 = service.getPuntosEsperaColectivo('Línea 1');
-      expect(paradasLinea1.length).toBeGreaterThan(0);
-      paradasLinea1.forEach((p) => {
-        expect(p.lineaColectivo).toContain('Línea 1');
-      });
+      expect(paradas).toEqual([]);
     });
   });
 });

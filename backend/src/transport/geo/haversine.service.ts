@@ -56,7 +56,8 @@ export class HaversineService {
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(radLat1) * Math.cos(radLat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const boundedA = Math.min(1, Math.max(0, a));
+    const c = 2 * Math.atan2(Math.sqrt(boundedA), Math.sqrt(1 - boundedA));
     const distance = this.RADIO_TIERRA_METROS * c;
 
     return Math.round(distance * 10) / 10; // Precisión con 1 decimal
@@ -66,7 +67,7 @@ export class HaversineService {
    * Tarea 6 (HU #3): Validación estricta de coordenadas geográficas.
    * Rechaza coordenadas fuera de rangos válidos o fuera de la región.
    */
-  public validateCoordinates(latitude: any, longitude: any): boolean {
+  public validateCoordinates(latitude: unknown, longitude: unknown): boolean {
     const lat = Number(latitude);
     const lng = Number(longitude);
 
@@ -113,7 +114,9 @@ export class HaversineService {
         const fetchPromise = this.supabase
           .from('parada')
           .select('*')
-          .eq('activo', true);
+          .eq('activo', true)
+          .eq('verificado', true)
+          .not('fuente_url', 'is', null);
 
         const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) => {
           timeoutId = setTimeout(() => resolve({ data: null, error: new Error('Timeout Supabase') }), 1200);
@@ -123,7 +126,17 @@ export class HaversineService {
         clearTimeout(timeoutId!);
 
         if (!error && Array.isArray(data) && data.length > 0) {
-          return data.map((p) => ({
+          return data.filter((p) => {
+            const lat = Number(p.latitud);
+            const lng = Number(p.longitud);
+            return p.verificado === true
+              && typeof p.fuente_url === 'string'
+              && p.fuente_url.startsWith('https://')
+              && Number.isFinite(lat)
+              && Number.isFinite(lng)
+              && lat >= -56 && lat <= -17
+              && lng >= -76 && lng <= -66;
+          }).map((p) => ({
             idParada: p.id_parada,
             codigoParada: p.codigo_parada || p.id_parada,
             nombre: p.nombre,
@@ -134,6 +147,8 @@ export class HaversineService {
             esPuntoSeguro: Boolean(p.es_punto_seguro),
             tipoParada: p.tipo_parada,
             lineasAsociadas: p.lineas_asociadas,
+            verificado: true,
+            fuenteUrl: p.fuente_url,
           }));
         }
       } catch (err) {
@@ -141,7 +156,9 @@ export class HaversineService {
       }
     }
 
-    return CATALOGO_PARADAS_MARGA_MARGA;
+    return CATALOGO_PARADAS_MARGA_MARGA.filter(
+      (parada) => parada.verificado && Boolean(parada.fuenteUrl?.startsWith('https://')),
+    );
   }
 
   /**
@@ -168,8 +185,8 @@ export class HaversineService {
 
     const paradas = await this.getParadasList();
     const candidatas = options.soloPuntosSeguros
-      ? paradas.filter((p) => p.esPuntoSeguro)
-      : paradas;
+      ? paradas.filter((p) => p.esPuntoSeguro && p.verificado && Boolean(p.fuenteUrl?.startsWith('https://')))
+      : paradas.filter((p) => p.verificado && Boolean(p.fuenteUrl?.startsWith('https://')));
 
     if (candidatas.length === 0) {
       if (this.mqttService) {
@@ -216,5 +233,80 @@ export class HaversineService {
     }
 
     return result;
+  }
+
+  async findClosestStops(
+    userLat: number,
+    userLng: number,
+    options: {
+      lineasPermitidas: string[];
+      radioInicialMetros?: number;
+      maxResultados?: number;
+    },
+  ): Promise<ParadaCercanaResultado[]> {
+    if (!this.validateCoordinates(userLat, userLng)) {
+      throw new Error('Coordenadas geográficas inválidas o fuera de rango.');
+    }
+
+    const lineas = [...new Set(options.lineasPermitidas.map((linea) => linea.trim()).filter(Boolean))];
+    if (lineas.length === 0) return [];
+
+    const paradas = await this.getParadasList();
+    const radioInicial = options.radioInicialMetros || 500;
+    const resultados = lineas.flatMap((linea) => {
+      const lineaNorm = linea.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const candidatas = paradas.filter((parada) => {
+        const asociadas = (parada.lineasAsociadas || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+        return parada.verificado
+          && Boolean(parada.fuenteUrl?.startsWith('https://'))
+          && asociadas.includes(lineaNorm);
+      });
+
+      const masCercana = candidatas
+        .map((parada) => ({
+          parada,
+          distanciaMetros: this.calculateDistance(
+            userLat,
+            userLng,
+            parada.latitud,
+            parada.longitud,
+          ),
+        }))
+        .sort((a, b) => a.distanciaMetros - b.distanciaMetros)[0];
+
+      if (!masCercana) return [];
+
+      const radioAmpliado = masCercana.distanciaMetros > radioInicial;
+      const radioAplicadoMetros = radioAmpliado
+        ? Math.ceil(masCercana.distanciaMetros / 500) * 500
+        : radioInicial;
+
+      return [{
+        parada: {
+          ...masCercana.parada,
+          lineasAsociadas: linea,
+        },
+        distanciaMetros: masCercana.distanciaMetros,
+        radioAplicadoMetros,
+        radioAmpliado,
+        googleMapsUrl: this.generateGoogleMapsLink(
+          masCercana.parada.latitud,
+          masCercana.parada.longitud,
+        ),
+        googleMapsDirectionsUrl: this.generateWalkingDirectionsLink(
+          userLat,
+          userLng,
+          masCercana.parada.latitud,
+          masCercana.parada.longitud,
+        ),
+      }];
+    });
+
+    return resultados
+      .sort((a, b) => a.distanciaMetros - b.distanciaMetros)
+      .slice(0, Math.min(3, Math.max(1, options.maxResultados || 3)));
   }
 }

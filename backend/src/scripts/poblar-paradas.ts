@@ -28,7 +28,11 @@ async function poblarParadas() {
     es_punto_seguro: p.esPuntoSeguro,
     tipo_parada: p.tipoParada,
     lineas_asociadas: p.lineasAsociadas,
-    activo: true,
+    verificado: false,
+    fuente_url: null,
+    evidencia_fuente: null,
+    fecha_verificacion: null,
+    activo: false,
   }));
 
   const { data, error } = await supabase

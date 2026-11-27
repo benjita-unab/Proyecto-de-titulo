@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS public.medio_transporte (
     frecuencia_estimada VARCHAR(50) NOT NULL DEFAULT 'Cada 10-15 min',
     pasa_hospital_quilpue BOOLEAN NOT NULL DEFAULT false,
     activo BOOLEAN NOT NULL DEFAULT true,
+    verificado BOOLEAN NOT NULL DEFAULT false,
+    fuente_url TEXT,
+    evidencia_fuente TEXT,
+    fecha_verificacion TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -49,6 +53,10 @@ CREATE TABLE IF NOT EXISTS public.recorrido_transporte (
     frecuencia VARCHAR(50) NOT NULL DEFAULT 'Regular',
     pasa_hospital_quilpue BOOLEAN NOT NULL DEFAULT false,
     activo BOOLEAN NOT NULL DEFAULT true,
+    verificado BOOLEAN NOT NULL DEFAULT false,
+    fuente_url TEXT,
+    evidencia_fuente TEXT,
+    fecha_verificacion TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -80,6 +88,10 @@ CREATE TABLE IF NOT EXISTS public.colectivo (
     paraderos_principales TEXT,
     pasa_hospital_quilpue BOOLEAN NOT NULL DEFAULT false,
     activo BOOLEAN NOT NULL DEFAULT true,
+    verificado BOOLEAN NOT NULL DEFAULT false,
+    fuente_url TEXT,
+    evidencia_fuente TEXT,
+    fecha_verificacion TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -124,6 +136,10 @@ CREATE TABLE IF NOT EXISTS public.parada (
     tipo_parada VARCHAR(60) NOT NULL DEFAULT 'Microbús y Colectivo',
     lineas_asociadas TEXT,
     activo BOOLEAN NOT NULL DEFAULT true,
+    verificado BOOLEAN NOT NULL DEFAULT false,
+    fuente_url TEXT,
+    evidencia_fuente TEXT,
+    fecha_verificacion TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -161,14 +177,18 @@ CREATE TABLE IF NOT EXISTS public.servicio_radiotaxi (
     telefono_formateado VARCHAR(50) NOT NULL,
     direccion_base VARCHAR(255) NOT NULL,
     comuna VARCHAR(80) NOT NULL DEFAULT 'Quilpué',
-    tarifa_base_estimada VARCHAR(50) NOT NULL DEFAULT '$2.500 - $3.200',
-    tarifa_minima INTEGER NOT NULL DEFAULT 2500 CHECK (tarifa_minima >= 0),
-    tarifa_por_km INTEGER NOT NULL DEFAULT 800 CHECK (tarifa_por_km >= 0),
-    recargo_nocturno INTEGER NOT NULL DEFAULT 500 CHECK (recargo_nocturno >= 0),
-    maletero_silla_ruedas BOOLEAN NOT NULL DEFAULT true,
-    horario_atencion VARCHAR(50) NOT NULL DEFAULT '24 Horas',
-    autorizada BOOLEAN NOT NULL DEFAULT true,
-    activo BOOLEAN NOT NULL DEFAULT true,
+    tarifa_base_estimada VARCHAR(50) NOT NULL DEFAULT 'No publicada',
+    tarifa_minima INTEGER NOT NULL DEFAULT 0 CHECK (tarifa_minima >= 0),
+    tarifa_por_km INTEGER NOT NULL DEFAULT 0 CHECK (tarifa_por_km >= 0),
+    recargo_nocturno INTEGER NOT NULL DEFAULT 0 CHECK (recargo_nocturno >= 0),
+    maletero_silla_ruedas BOOLEAN NOT NULL DEFAULT false,
+    horario_atencion VARCHAR(50) NOT NULL DEFAULT 'No verificada',
+    autorizada BOOLEAN NOT NULL DEFAULT false,
+    activo BOOLEAN NOT NULL DEFAULT false,
+    verificado BOOLEAN NOT NULL DEFAULT false,
+    fuente_url TEXT,
+    evidencia_fuente TEXT,
+    fecha_verificacion TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

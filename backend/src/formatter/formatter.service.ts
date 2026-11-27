@@ -159,6 +159,16 @@ export class FormatterService {
     text += `🛡️ *${sp.nombre}*\n`;
     text += `📍 *Ubicación:* ${sp.direccion} (a ${safePointResult.distanciaMetros}m de ti)\n`;
     text += `🗺️ *Ver en mapa:* ${safePointResult.googleMapsUrl}\n\n`;
+    if (taxis.length === 0) {
+      text += `Aún no tenemos centrales con contacto y autorización verificados.`;
+      return {
+        text,
+        safePoint: sp,
+        taxis,
+        directionsUrl: safePointResult.googleMapsDirectionsUrl,
+      };
+    }
+
     text += `📞 *Centrales autorizadas listas para llamar:*\n`;
 
     taxis.slice(0, 3).forEach((t, i) => {

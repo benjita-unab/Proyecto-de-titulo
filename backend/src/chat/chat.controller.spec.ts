@@ -26,7 +26,10 @@ describe('ChatController', () => {
         NlpService,
         RutasService,
         HorariosService,
-        TaxisService,
+        {
+          provide: TaxisService,
+          useValue: { getCentralesRadioTaxi: jest.fn().mockResolvedValue([]) },
+        },
         FormatterService,
         {
           provide: ConfigService,
@@ -72,13 +75,12 @@ describe('ChatController', () => {
       expect(response.text).not.toContain('Disculpa, no alcancé a entender');
     });
 
-    it('should return radiotaxi contacts and showRadioTaxis flag when asking for radio taxi', async () => {
+    it('should not show unverified radiotaxi contacts when asking for radio taxi', async () => {
       const response = await controller.handleChat('¿Cuáles son los números de radio taxi?');
-      expect(response.showRadioTaxis).toBe(true);
-      expect(response.text).toContain('centrales de Radio Taxi autorizadas');
+      expect(response.showRadioTaxis).toBe(false);
+      expect(response.text).toContain('contacto y autorización verificados');
       expect(response.taxis).toBeDefined();
-      expect(Array.isArray(response.taxis)).toBe(true);
-      expect(response.taxis.length).toBeGreaterThanOrEqual(2);
+      expect(response.taxis).toEqual([]);
       expect(response.text).not.toContain('Disculpa, no alcancé a entender');
     });
 

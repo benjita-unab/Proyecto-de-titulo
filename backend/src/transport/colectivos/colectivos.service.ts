@@ -20,6 +20,7 @@ export interface ColectivoDto {
   tarifaAdultoMayor: number;
   accesibleAdultoMayor: boolean;
   paraderosPrincipales: string[];
+  fuenteUrl: string;
 }
 
 /**
@@ -32,6 +33,8 @@ export interface PuntoEsperaColectivo {
   longitud: number;
   lineaColectivo: string;
   distanciaMetros?: number;
+  verificado: boolean;
+  fuenteUrl: string | null;
 }
 
 @Injectable()
@@ -59,22 +62,38 @@ export class ColectivosService {
       id: item.id_colectivo || item.id,
       numeroLinea: item.numero_linea || item.numeroLinea,
       nombreLinea: item.nombre_linea || item.nombreLinea,
-      comuna: item.comuna || 'Quilpué',
+      comuna: item.comuna,
       origen: item.origen,
       destino: item.destino,
       trazadoIda: item.trazado_ida || item.trazadoIda,
       trazadoRegreso: item.trazado_regreso || item.trazadoRegreso,
-      frecuenciaMinutos: Number(item.frecuencia_minutos ?? item.frecuenciaMinutos ?? 5),
-      horarioInicio: item.horario_inicio || item.horarioInicio || '06:00',
-      horarioTermino: item.horario_termino || item.horarioTermino || '22:30',
-      tarifaDiurna: Number(item.tarifa_diurna ?? item.tarifaDiurna ?? 850),
-      tarifaNocturna: Number(item.tarifa_nocturna ?? item.tarifaNocturna ?? 1100),
-      tarifaAdultoMayor: Number(item.tarifa_adulto_mayor ?? item.tarifaAdultoMayor ?? 600),
-      accesibleAdultoMayor: Boolean(item.accesible_adulto_mayor ?? item.accesibleAdultoMayor ?? true),
+      frecuenciaMinutos: Number(item.frecuencia_minutos ?? item.frecuenciaMinutos),
+      horarioInicio: item.horario_inicio || item.horarioInicio,
+      horarioTermino: item.horario_termino || item.horarioTermino,
+      tarifaDiurna: Number(item.tarifa_diurna ?? item.tarifaDiurna),
+      tarifaNocturna: Number(item.tarifa_nocturna ?? item.tarifaNocturna),
+      tarifaAdultoMayor: Number(item.tarifa_adulto_mayor ?? item.tarifaAdultoMayor),
+      accesibleAdultoMayor: Boolean(item.accesible_adulto_mayor ?? item.accesibleAdultoMayor),
       paraderosPrincipales: typeof item.paraderos_principales === 'string'
         ? item.paraderos_principales.split(',').map((p: string) => p.trim())
         : (item.paraderosPrincipales || []),
+      fuenteUrl: item.fuente_url || item.fuenteUrl,
     };
+  }
+
+  private isPublishable(item: any): boolean {
+    const url = item.fuente_url || item.fuenteUrl;
+    const evidence = item.evidencia_fuente || item.evidenciaFuente;
+    return item.verificado === true
+      && typeof url === 'string'
+      && url.startsWith('https://')
+      && typeof evidence === 'string'
+      && evidence.trim().length > 0
+      && typeof (item.numero_linea || item.numeroLinea) === 'string'
+      && typeof item.destino === 'string'
+      && Number.isFinite(Number(item.frecuencia_minutos ?? item.frecuenciaMinutos))
+      && Number.isFinite(Number(item.tarifa_diurna ?? item.tarifaDiurna))
+      && Number.isFinite(Number(item.tarifa_adulto_mayor ?? item.tarifaAdultoMayor));
   }
 
   /**
@@ -90,7 +109,10 @@ export class ColectivosService {
         const queryPromise = this.supabase
           .from('colectivo')
           .select('*')
-          .eq('activo', true);
+          .eq('activo', true)
+          .eq('verificado', true)
+          .not('fuente_url', 'is', null)
+          .not('evidencia_fuente', 'is', null);
 
         const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) => {
           timeoutId = setTimeout(() => resolve({ data: null, error: new Error('Timeout Supabase') }), 1200);
@@ -100,7 +122,7 @@ export class ColectivosService {
         clearTimeout(timeoutId!);
 
         if (!error && Array.isArray(data) && data.length > 0) {
-          rawList = data;
+          rawList = data.filter((item) => this.isPublishable(item));
         }
       } catch (err) {
         this.logger.warn(`Fallo al consultar colectivos en Supabase: ${err}. Activando contingencia.`);
@@ -108,7 +130,7 @@ export class ColectivosService {
     }
 
     if (rawList.length === 0) {
-      rawList = CATALOGO_COLECTIVOS_QUILPUE;
+      rawList = CATALOGO_COLECTIVOS_QUILPUE.filter((item) => this.isPublishable(item));
     }
 
     const mapped = rawList.map((item) => this.mapFromDb(item));
@@ -137,16 +159,7 @@ export class ColectivosService {
    * Tarea 5: Devuelve puntos de espera asociados a colectivos para integrar con el cálculo de Haversine.
    */
   getPuntosEsperaColectivo(numeroLinea?: string): PuntoEsperaColectivo[] {
-    const paradasBase: PuntoEsperaColectivo[] = [
-      { idParada: 'PAR-COL-01', nombre: 'Garita Belloto Norte', latitud: -33.0442, longitud: -71.4285, lineaColectivo: 'Línea 1' },
-      { idParada: 'PAR-COL-02', nombre: 'Plaza de Quilpué (Parada Colectivos)', latitud: -33.0483, longitud: -71.4431, lineaColectivo: 'Línea 1, 2, 3, 5' },
-      { idParada: 'PAR-COL-03', nombre: 'Feria El Belloto (Parada Colectivos)', latitud: -33.0510, longitud: -71.4330, lineaColectivo: 'Línea 2' },
-      { idParada: 'PAR-COL-04', nombre: 'Terminal Los Pinos Quilpué', latitud: -33.0720, longitud: -71.4360, lineaColectivo: 'Línea 3' },
-      { idParada: 'PAR-COL-05', nombre: 'Hospital de Quilpué (Acceso Colectivos)', latitud: -33.0520, longitud: -71.4480, lineaColectivo: 'Línea 4' },
-      { idParada: 'PAR-COL-06', nombre: 'Terminal El Retiro Quilpué', latitud: -33.0390, longitud: -71.4550, lineaColectivo: 'Línea 5' },
-    ];
-
-    if (!numeroLinea) return paradasBase;
-    return paradasBase.filter((p) => p.lineaColectivo.includes(numeroLinea));
+    void numeroLinea;
+    return [];
   }
 }

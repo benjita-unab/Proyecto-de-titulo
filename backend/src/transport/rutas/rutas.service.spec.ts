@@ -4,6 +4,18 @@ import { ConfigService } from '@nestjs/config';
 
 describe('RutasService', () => {
   let service: RutasService;
+  const createQuery = (result: any) => {
+    const query: any = {
+      select: jest.fn(),
+      eq: jest.fn(),
+      not: jest.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.not.mockReturnValue(query);
+    query.then = (resolve: (value: any) => void) => resolve(result);
+    return query;
+  };
 
   beforeEach(async () => {
     const mockConfigService = {
@@ -38,6 +50,8 @@ describe('RutasService', () => {
         {
           nombre_recorrido: 'Centro',
           calles_principales: 'Calle 1, Calle 2, Hospital',
+          fuente_url: 'https://mtt.gob.cl/ruta',
+          evidencia_fuente: 'Línea 10: Calle 1, Calle 2, Hospital',
           medio_transporte: {
             nombre_linea: 'Línea 10',
             tipo_transporte: 'Micro',
@@ -45,9 +59,8 @@ describe('RutasService', () => {
         },
       ];
 
-      // Simulamos la cadena de llamadas de supabase: from().select()
-      const mockSelect = jest.fn().mockResolvedValue({ data: mockData, error: null });
-      const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+      const query = createQuery({ data: mockData, error: null });
+      const mockFrom = jest.fn().mockReturnValue(query);
 
       (service as any).supabase = { from: mockFrom };
 
@@ -55,7 +68,8 @@ describe('RutasService', () => {
 
       // Verificamos que se llame a supabase
       expect(mockFrom).toHaveBeenCalledWith('recorrido_transporte');
-      expect(mockSelect).toHaveBeenCalled();
+      expect(query.eq).toHaveBeenCalledWith('verificado', true);
+      expect(query.not).toHaveBeenCalledWith('evidencia_fuente', 'is', null);
 
       // Validar que el retorno sea un objeto estructurado y NO un string plano pre-concatenado
       expect(Array.isArray(result)).toBe(true);
@@ -72,8 +86,8 @@ describe('RutasService', () => {
     });
 
     it('debe manejar errores de Supabase y devolver un arreglo vacío', async () => {
-      const mockSelect = jest.fn().mockResolvedValue({ data: null, error: new Error('DB Error') });
-      (service as any).supabase = { from: jest.fn().mockReturnValue({ select: mockSelect }) };
+      const query = createQuery({ data: null, error: new Error('DB Error') });
+      (service as any).supabase = { from: jest.fn().mockReturnValue(query) };
 
       const result = await service.getRoutesForDestination('error');
       expect(result).toEqual([]);
@@ -87,11 +101,27 @@ describe('RutasService', () => {
           medio_transporte: { nombre_linea: 'Línea 10' }
         }
       ];
-      const mockSelect = jest.fn().mockResolvedValue({ data: mockData, error: null });
-      (service as any).supabase = { from: jest.fn().mockReturnValue({ select: mockSelect }) };
+      const query = createQuery({ data: mockData, error: null });
+      (service as any).supabase = { from: jest.fn().mockReturnValue(query) };
 
       const result = await service.getRoutesForDestination('marte');
       expect(result).toEqual([]);
+    });
+
+    it('restringe las búsquedas al Hospital a recorridos marcados para ese destino', async () => {
+      const query = createQuery({ data: [], error: null });
+      (service as any).supabase = {
+        from: jest.fn().mockReturnValue(query),
+      };
+
+      await service.getRoutesForDestination('Hospital de Quilpué');
+
+      expect(query.eq).toHaveBeenCalledWith('pasa_hospital_quilpue', true);
+    });
+
+    it('no inventa recorridos cuando no hay registros respaldados', async () => {
+      (service as any).supabase = null;
+      await expect(service.getRoutesForDestination('Hospital de Quilpué')).resolves.toEqual([]);
     });
   });
 });

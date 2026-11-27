@@ -168,8 +168,8 @@ export class TelegramFormatterService {
       return {
         text:
           `🚕 <b>MoviTech - Radio Taxis (${tituloComuna})</b>\n\n` +
-          `En este momento no hay información de bases disponibles en el directorio.\n` +
-          `Por favor, intenta nuevamente en unos minutos.`,
+          `No hay centrales con contacto y autorización verificados disponibles en este momento.\n` +
+          `Por seguridad, no mostraremos números sin confirmar.`,
         parse_mode: 'HTML',
       };
     }
@@ -211,10 +211,7 @@ export class TelegramFormatterService {
       `👋 ¡Hola${nombre}! Te damos la bienvenida a <b>MoviTech</b>.\n\n` +
       `Tu asistente de movilidad diseñado especialmente para acompañarte y facilitarte tus viajes en Quilpué.\n\n` +
       `¿En qué te puedo ayudar hoy?\n` +
-      `• 🚌 <b>Recorridos y micros:</b> "¿Cómo llego al Hospital de Quilpué?" o "Feria El Belloto"\n` +
-      `• ⏱️ <b>Horarios:</b> "¿A qué hora pasa la Línea 111?" o "Horarios de Quilpué"\n` +
-      `• 🚕 <b>Radio Taxis:</b> "Taxis en Quilpué" o "Radio Taxi Quilpué"\n\n` +
-      `<i>Escribe tu consulta o envíame un mensaje de voz y te responderé de inmediato.</i>`;
+      `Toca uno de los destinos o comparte tu ubicación con el botón de abajo.`;
 
     return {
       text,
@@ -303,21 +300,21 @@ export class TelegramFormatterService {
   ): TelegramFormattedResponse & { reply_markup?: any } {
     const destClean = this.escapeHtml(destination);
     const mb = data?.microbus || {
-      lineas: 'Líneas C02, 108, 111, Q02',
-      tarifaGeneral: '$350 - $450',
-      tarifaAdultoMayor: '$150',
-      frecuencia: 'Cada 10-15 min',
+      lineas: 'No verificado',
+      tarifaGeneral: 'No verificada',
+      tarifaAdultoMayor: 'No verificada',
+      frecuencia: 'No verificada',
     };
     const col = data?.colectivo || {
-      lineas: 'Líneas 1, 2, 3, 4',
-      tarifaGeneral: '$850',
-      tarifaAdultoMayor: '$600',
-      frecuencia: 'Cada 4-6 min',
+      lineas: 'Sin datos verificados',
+      tarifaGeneral: 'No verificada',
+      tarifaAdultoMayor: 'No verificada',
+      frecuencia: 'No verificada',
     };
     const tx = data?.radiotaxi || {
-      centrales: 'Taxiexpress Quilpué, Transporte 24 Horas',
-      tarifaBase: '$2.500 - $3.200',
-      tiempoEspera: 'Inmediato / Domicilio',
+      centrales: 'Consultar directorio oficial',
+      tarifaBase: 'Consultar con la central',
+      tiempoEspera: 'No verificado',
     };
 
     let text = `🧭 <b>OPCIONES DE TRANSPORTE A: ${destClean.toUpperCase()}</b>\n`;
@@ -325,17 +322,17 @@ export class TelegramFormatterService {
 
     text += `🚌 <b>1. MICROBÚS (${this.escapeHtml(mb.lineas)})</b>\n`;
     text += `💰 Adulto Mayor: <b>${this.escapeHtml(mb.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(mb.tarifaGeneral)}\n`;
-    text += `⏱️ Frecuencia: ${this.escapeHtml(mb.frecuencia)} | Rampa accesible\n\n`;
+    text += `⏱️ Frecuencia: ${this.escapeHtml(mb.frecuencia)}\n\n`;
 
     text += `🚕 <b>2. COLECTIVO (${this.escapeHtml(col.lineas)})</b>\n`;
     text += `💰 Adulto Mayor: <b>${this.escapeHtml(col.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(col.tarifaGeneral)}\n`;
-    text += `⏱️ Frecuencia: ${this.escapeHtml(col.frecuencia)} | Parada a solicitud\n\n`;
+    text += `⏱️ Frecuencia: ${this.escapeHtml(col.frecuencia)}\n\n`;
 
     text += `🚖 <b>3. RADIO TAXI (${this.escapeHtml(tx.centrales)})</b>\n`;
     text += `💰 Tarifa estimada: <b>${this.escapeHtml(tx.tarifaBase)}</b>\n`;
-    text += `📞 Directo a domicilio | Disponible 24 Horas\n\n`;
+    text += `📞 Contacta directamente a la central para confirmar disponibilidad.\n\n`;
 
-    text += `👇 <b>Toca una opción o escribe 1, 2 o 3 para ver detalles y paradas:</b>`;
+    text += `👇 <b>Toca una opción para ver detalles. ¿Necesitas algo más?</b>`;
 
     const inlineKeyboard = {
       inline_keyboard: [
@@ -345,6 +342,10 @@ export class TelegramFormatterService {
         ],
         [
           { text: '🚖 3. Ver Radio Taxis', callback_data: `sel_taxi_${destination.substring(0, 20)}` },
+        ],
+        [
+          { text: '🔄 Otra consulta', callback_data: 'flow_restart' },
+          { text: '✅ Finalizar', callback_data: 'flow_done' },
         ],
       ],
     };
@@ -366,7 +367,10 @@ export class TelegramFormatterService {
     const destClean = this.escapeHtml(destination);
     if (!colectivos || colectivos.length === 0) {
       return {
-        text: `🚕 <b>Líneas de Colectivos hacia ${destClean.toUpperCase()}</b>\n\nNo se encontraron colectivos directos en este momento. Te recomendamos consultar las opciones de microbuses o radiotaxis.`,
+        text:
+          `🚕 <b>Colectivos hacia ${destClean.toUpperCase()}</b>\n\n` +
+          `Aún no tenemos líneas de colectivos verificadas para este destino. ` +
+          `No mostraremos recorridos, tarifas ni horarios sin una fuente comprobable.`,
         parse_mode: 'HTML',
       };
     }
@@ -377,22 +381,19 @@ export class TelegramFormatterService {
     colectivos.slice(0, 3).forEach((col, idx) => {
       const nombre = this.escapeHtml(col.numeroLinea || col.nombreLinea);
       const recorrido = this.escapeHtml(col.trazadoIda || col.destino);
-      const freq = col.frecuenciaMinutos ? `Cada ${col.frecuenciaMinutos} min` : 'Alta frecuencia';
-      const tarifaAM = col.tarifaAdultoMayor ? `$${col.tarifaAdultoMayor}` : '$600';
-      const tarifaGral = col.tarifaDiurna ? `$${col.tarifaDiurna}` : '$850';
+      const freq = col.frecuenciaMinutos ? `Cada ${col.frecuenciaMinutos} min` : 'No verificada';
+      const tarifaAM = col.tarifaAdultoMayor ? `$${col.tarifaAdultoMayor}` : 'No verificada';
+      const tarifaGral = col.tarifaDiurna ? `$${col.tarifaDiurna}` : 'No verificada';
 
       text += `<b>${idx + 1}. 🚕 ${nombre}</b>\n`;
       text += `   📍 <b>Recorrido:</b> ${recorrido}\n`;
-      text += `   ⏱️ <b>Frecuencia:</b> ${freq} (06:00 a 22:30 hrs)\n`;
-      text += `   💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAM} | General: ${tarifaGral}\n\n`;
+      text += `   ⏱️ <b>Frecuencia:</b> ${freq} (${this.escapeHtml(col.horarioInicio || 'horario no verificado')} a ${this.escapeHtml(col.horarioTermino || 'horario no verificado')})\n`;
+      text += `   💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAM} | General: ${tarifaGral}\n`;
+      if (col.fuenteUrl) {
+        text += `   🔎 <a href="${this.escapeHtml(col.fuenteUrl)}">Fuente consultada</a>\n`;
+      }
+      text += '\n';
     });
-
-    const encodedDest = encodeURIComponent(`${destination} Quilpue`);
-    text += `🚏 <b>Paradero sugerido para abordar:</b> Plaza de Quilpué / Los Carrera\n`;
-    text += `🚶‍♂️ <b>Caminata estimada:</b> A 85 metros a pie\n`;
-    text += `🗺️ <a href="https://maps.google.com/maps?saddr=-33.0480,-71.4425&amp;daddr=-33.0483,-71.4431&amp;dirflg=w">Ver cómo caminar al paradero más cercano</a>\n\n`;
-    text += `📍 <a href="https://maps.google.com/?q=${encodedDest}">Ver destino final en Google Maps</a>\n\n`;
-    text += `💡 <i>Tip MoviTech: Los colectivos pueden dejarte a solicitud en la esquina más cercana a tu destino.</i>`;
 
     return {
       text,
@@ -442,6 +443,14 @@ export class TelegramFormatterService {
     text += `🛡️ <b>${this.escapeHtml(sp.nombre)}</b>\n`;
     text += `📍 <b>Ubicación:</b> ${this.escapeHtml(sp.direccion)} (a ${safePointResult.distanciaMetros}m de ti)\n`;
     text += `🗺️ <a href="${safePointResult.googleMapsUrl}">Ver punto de encuentro en Google Maps</a>\n\n`;
+    if (taxis.length === 0) {
+      text += `Aún no tenemos centrales de radiotaxi con contacto y autorización verificados.\n`;
+      return {
+        text,
+        parse_mode: 'HTML',
+      };
+    }
+
     text += `📞 <b>Centrales oficiales autorizadas para solicitar tu móvil:</b>\n`;
 
     taxis.slice(0, 3).forEach((t, i) => {
@@ -454,6 +463,46 @@ export class TelegramFormatterService {
       text,
       parse_mode: 'HTML',
     };
+  }
+
+  public formatNearbyStopsResponse(
+    results: Array<{
+      parada: { nombre: string; direccion: string; lineasAsociadas: string; fuenteUrl?: string | null };
+      distanciaMetros: number;
+      radioAmpliado: boolean;
+      googleMapsDirectionsUrl: string;
+    }>,
+    destination: string,
+  ): TelegramFormattedResponse {
+    const destSafe = this.escapeHtml(destination);
+    if (results.length === 0) {
+      return {
+        text:
+          `📍 <b>Paraderos hacia ${destSafe}</b>\n\n` +
+          `Aún no tenemos paraderos y recorridos verificados para este destino. ` +
+          `No estimaremos una línea ni cambiaremos tu ubicación.`,
+        parse_mode: 'HTML',
+      };
+    }
+
+    let text = `📍 <b>PARADEROS HACIA ${destSafe.toUpperCase()}</b>\n\n`;
+    results.slice(0, 3).forEach((result, index) => {
+      const label = index === 0 ? '⭐ Más conveniente' : `Opción ${index + 1}`;
+      text += `<b>${label}: ${this.escapeHtml(result.parada.lineasAsociadas)}</b>\n`;
+      text += `🚏 ${this.escapeHtml(result.parada.nombre)}\n`;
+      text += `📍 ${this.escapeHtml(result.parada.direccion)}\n`;
+      text += `🚶 Distancia aproximada: ${result.distanciaMetros} m`;
+      if (result.radioAmpliado) {
+        text += ` (búsqueda ampliada a ${result.distanciaMetros} m)`;
+      }
+      text += `\n🗺️ <a href="${result.googleMapsDirectionsUrl}">Ver ruta a pie</a>\n`;
+      if (result.parada.fuenteUrl) {
+        text += `🔎 <a href="${this.escapeHtml(result.parada.fuenteUrl)}">Fuente consultada</a>\n`;
+      }
+      text += '\n';
+    });
+
+    return { text, parse_mode: 'HTML' };
   }
 }
 

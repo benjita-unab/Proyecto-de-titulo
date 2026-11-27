@@ -17,36 +17,41 @@ describe('TaxisService', () => {
   });
 
   describe('getCentralesRadioTaxi', () => {
-    it('debe devolver al menos 2 centrales autorizadas con nombre, telefono y direccion (CA-3.1 y CA-3.3)', async () => {
+    it('no debe inventar ni mostrar centrales si Supabase no está configurado', async () => {
       const centrales = await service.getCentralesRadioTaxi();
-      expect(centrales).toBeDefined();
-      expect(Array.isArray(centrales)).toBe(true);
-      expect(centrales.length).toBeGreaterThanOrEqual(2);
-
-      centrales.forEach((taxi) => {
-        expect(taxi.nombre).toBeDefined();
-        expect(taxi.nombre.length).toBeGreaterThan(0);
-        expect(taxi.telefono).toMatch(/^\+56\d+/); // Formato E.164
-        expect(taxi.telefonoFormateado).toBeDefined();
-        expect(taxi.direccionBase).toBeDefined();
-        expect(taxi.autorizada).toBe(true);
-      });
+      expect(centrales).toEqual([]);
     });
 
-    it('debe mantener disponibilidad con lista de contingencia si no hay conexion', async () => {
-      // Forzar cliente nulo
-      (service as any).supabase = null;
+    it('debe mantener la lista vacía si se pierde la conexión en lugar de usar una contingencia falsa', async () => {
       const centrales = await service.getCentralesRadioTaxi();
-      expect(centrales.length).toBeGreaterThanOrEqual(2);
-      expect(centrales.some((c) => c.nombre.includes('Taxi'))).toBe(true);
+      expect(centrales).toEqual([]);
     });
 
-    it('no debe incluir ninguna central de Villa Alemana', async () => {
-      const centrales = await service.getCentralesRadioTaxi();
-      const tieneVillaAlemana = centrales.some((c) =>
-        `${c.nombre} ${c.direccionBase}`.toLowerCase().includes('villa alemana'),
+    it('debe usar una respuesta vacía como estado seguro hasta verificar fuentes y autorización', async () => {
+      await expect(service.getCentralesRadioTaxi('Quilpué')).resolves.toEqual([]);
+    });
+
+    it('debe registrar y manejar errores de esquema sin dejar el webhook sin respuesta', async () => {
+      const query = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'column servicio_radiotaxi.verificado does not exist' },
+        }),
+      };
+      (service as any).supabase = {
+        from: jest.fn().mockReturnValue(query),
+      };
+      const loggerError = jest
+        .spyOn((service as any).logger, 'error')
+        .mockImplementation(() => undefined);
+
+      await expect(service.getCentralesRadioTaxi('Quilpué')).resolves.toEqual([]);
+
+      expect(loggerError).toHaveBeenCalledWith(
+        expect.stringContaining('No se mostrarán contactos sin confirmar'),
       );
-      expect(tieneVillaAlemana).toBe(false);
     });
   });
 });

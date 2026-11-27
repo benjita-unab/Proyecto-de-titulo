@@ -19,15 +19,36 @@ import { ComparativeFlowService } from '../chat/comparative-flow.service';
 import { GeminiService } from '../nlp/gemini.service';
 import { MqttService } from '../mqtt/mqtt.service';
 
-export const TECLADO_MOVITECH_TELEGRAM = {
-  keyboard: [
+type MovitechKeyboardButton = { text: string; request_location?: boolean };
+
+export function createMovitechKeyboard(
+  includeSimulation = false,
+) {
+  const keyboard: MovitechKeyboardButton[][] = [
     [{ text: '📍 Compartir mi ubicación', request_location: true }],
-    [{ text: '📍 Simular en Plaza Quilpué' }, { text: '📍 Simular en El Belloto' }],
     [{ text: '🏥 Hospital de Quilpué' }, { text: '🏛️ Plaza de Quilpué' }],
-    [{ text: '🚉 Estación Quilpué' }, { text: '🚕 Ver Radio Taxis Quilpué' }],
-  ],
-  resize_keyboard: true,
-  one_time_keyboard: false,
+    [{ text: '🚉 Estación Quilpué' }, { text: '🎪 Feria El Belloto' }],
+    [{ text: '🚕 Ver Radio Taxis Quilpué' }],
+  ];
+
+  if (includeSimulation && process.env.NODE_ENV !== 'production') {
+    keyboard.push([{ text: '🧪 Simular desde Estación Quilpué' }]);
+  }
+
+  return {
+    keyboard,
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  };
+}
+
+export const TECLADO_MOVITECH_TELEGRAM = createMovitechKeyboard();
+
+const FLOW_CONTROLS_INLINE_MARKUP = {
+  inline_keyboard: [[
+    { text: '🔄 Otra consulta', callback_data: 'flow_restart' },
+    { text: '✅ Finalizar', callback_data: 'flow_done' },
+  ]],
 };
 
 @Injectable()
@@ -264,6 +285,28 @@ export class TelegramService {
       if (parsed.callbackQueryId) {
         await this.answerCallbackQuery(parsed.callbackQueryId);
       }
+      if (parsed.callbackData === 'flow_restart') {
+        this.comparativeFlowService?.clearSession(parsed.chatId.toString());
+        const welcome = this.telegramFormatter?.formatWelcomeMessage(parsed.senderName)
+          || { text: '¡Hola! Elige un destino o comparte tu ubicación.' };
+        const sent = await this.sendMessage(
+          parsed.chatId,
+          welcome.text,
+          'HTML',
+          TECLADO_MOVITECH_TELEGRAM,
+        );
+        return { processed: true, chatId: parsed.chatId, text: parsed.callbackData, sent };
+      }
+      if (parsed.callbackData === 'flow_done') {
+        this.comparativeFlowService?.clearSession(parsed.chatId.toString());
+        const sent = await this.sendMessage(
+          parsed.chatId,
+          'Gracias por usar MoviTech. Cuando necesites, puedes elegir un destino o compartir tu ubicación.',
+          'HTML',
+          TECLADO_MOVITECH_TELEGRAM,
+        );
+        return { processed: true, chatId: parsed.chatId, text: parsed.callbackData, sent };
+      }
       if (this.comparativeFlowService) {
         this.logger.log(`[Telegram Callback] Selección recibida de ${parsed.senderName}: "${parsed.callbackData}"`);
         const selection = await this.comparativeFlowService.processSelection(
@@ -275,7 +318,7 @@ export class TelegramService {
             parsed.chatId,
             selection.telegram.text,
             (selection.telegram.parse_mode as any) || 'HTML',
-            (selection.telegram as any).reply_markup,
+            (selection.telegram as any).reply_markup || FLOW_CONTROLS_INLINE_MARKUP,
           );
           return {
             processed: true,
@@ -287,9 +330,9 @@ export class TelegramService {
       }
     }
 
-    // HU #3 Tarea 6: Manejo de ubicación compartida por GPS (con soporte para pruebas en Limache)
+    // Manejo de ubicación compartida por GPS.
     if (parsed.location && this.haversineService && this.telegramFormatter) {
-      let { latitude, longitude } = parsed.location;
+      const { latitude, longitude } = parsed.location;
       this.logger.log(`[Telegram Location] Ubicación recibida de ${parsed.senderName}: (${latitude}, ${longitude})`);
 
       if (!this.haversineService.validateCoordinates(latitude, longitude)) {
@@ -300,32 +343,54 @@ export class TelegramService {
         return { processed: true, chatId: parsed.chatId, sent };
       }
 
-      // Centro de referencia Quilpué (Plaza Manuel Blanco Encalada)
       const PLAZA_QLP_LAT = -33.0480;
       const PLAZA_QLP_LNG = -71.4425;
       const distAlCentro = this.haversineService.calculateDistance(latitude, longitude, PLAZA_QLP_LAT, PLAZA_QLP_LNG);
-
-      let prefijoSimulacion = '';
-      // Si el usuario prueba desde Limache u otra ciudad a más de 4 km:
       if (distAlCentro > 4000) {
-        this.logger.log(`[Telegram Simulation] Usuario en Limache o remoto (${Math.round(distAlCentro)}m de Quilpué). Activando simulación desde Quilpué Centro.`);
-        latitude = PLAZA_QLP_LAT;
-        longitude = PLAZA_QLP_LNG;
-        prefijoSimulacion = `🎬 <b>Modo Demostración Activo:</b>\n<i>Detectamos que te encuentras en Limache (a ${Math.round(distAlCentro / 1000)} km).\nPara tu video de demostración, simulamos tu salida desde <b>Plaza Manuel Blanco Encalada (Centro de Quilpué)</b>:</i>\n\n`;
+        const sent = await this.sendMessage(
+          parsed.chatId,
+          `📍 Recibimos tu ubicación y la mantendremos tal como la compartiste.\n\n` +
+            `Aún no contamos con paraderos verificados para esta zona. ` +
+            `Elige un destino para consultar información general, o inténtalo más tarde.`,
+          'HTML',
+          TECLADO_MOVITECH_TELEGRAM,
+        );
+        return { processed: true, chatId: parsed.chatId, sent };
       }
 
       const pendingDest = this.comparativeFlowService?.getSessionDestination(parsed.chatId.toString()) || undefined;
-
-      const closest = await this.haversineService.findClosestStop(latitude, longitude, {
-        radioInicialMetros: 500,
-      });
-
-      if (closest) {
-        const formatted = this.telegramFormatter.formatNearbyStopResponse(closest, pendingDest);
-        const replyText = prefijoSimulacion + formatted.text;
-        const sent = await this.sendMessage(parsed.chatId, replyText, 'HTML', TECLADO_MOVITECH_TELEGRAM);
-        return { processed: true, chatId: parsed.chatId, sent };
-      }
+      const hospitalDestination = pendingDest?.toLowerCase().includes('hospital');
+      const nearbyResults = hospitalDestination
+        ? await this.haversineService.findClosestStops(latitude, longitude, {
+            lineasPermitidas: (await this.rutasService?.getRoutesForDestination('Hospital de Quilpué') || [])
+              .map((route) => route.linea),
+            radioInicialMetros: 500,
+            maxResultados: 3,
+          })
+        : [];
+      const closest = hospitalDestination
+        ? null
+        : await this.haversineService.findClosestStop(latitude, longitude, {
+            radioInicialMetros: 500,
+          });
+      const formatted = hospitalDestination
+        ? this.telegramFormatter.formatNearbyStopsResponse(
+            nearbyResults,
+            pendingDest || 'Hospital de Quilpué',
+          )
+        : closest
+          ? this.telegramFormatter.formatNearbyStopResponse(closest, pendingDest)
+          : {
+              text: 'Aún no hay paraderos verificados disponibles para esta ubicación. No cambiaremos ni estimaremos tu ubicación.',
+              parse_mode: 'HTML' as const,
+            };
+      const sent = await this.sendMessage(
+        parsed.chatId,
+        formatted.text,
+        'HTML',
+        TECLADO_MOVITECH_TELEGRAM,
+      );
+      return { processed: true, chatId: parsed.chatId, sent };
     }
 
     this.logger.log(
@@ -411,28 +476,35 @@ export class TelegramService {
     } else if (trimmed === '🚕 Ver Radio Taxis Quilpué') {
       quickIntent = 'Consultar RadioTaxi';
     } else if (
-      trimmed === '📍 Simular en Plaza Quilpué' ||
-      trimmed === '📍 Simular en El Belloto' ||
-      trimmed.startsWith('/simular')
+      process.env.NODE_ENV !== 'production' &&
+      (trimmed === '🧪 Simular desde Estación Quilpué' ||
+        trimmed === '📍 Simular en Plaza Quilpué' ||
+        trimmed === '📍 Simular en El Belloto' ||
+        trimmed.startsWith('/simular'))
     ) {
       if (this.haversineService && this.telegramFormatter) {
+        const isStation = trimmed.includes('Estación');
         const isBelloto = trimmed.includes('Belloto');
-        const latSim = isBelloto ? -33.0510 : -33.0480;
-        const lngSim = isBelloto ? -71.4330 : -71.4425;
-        const nombreSim = isBelloto ? 'Feria El Belloto' : 'Plaza Manuel Blanco Encalada (Centro de Quilpué)';
+        const latSim = isStation ? -33.045 : isBelloto ? -33.051 : -33.048;
+        const lngSim = isStation ? -71.4428 : isBelloto ? -71.433 : -71.4425;
+        const nombreSim = isStation
+          ? 'Estación Quilpué (ubicación aproximada de demostración)'
+          : isBelloto
+            ? 'Feria El Belloto'
+            : 'Plaza Manuel Blanco Encalada (Centro de Quilpué)';
 
         const pendingDest = this.comparativeFlowService?.getSessionDestination(chatId.toString()) || 'Hospital de Quilpué';
         const closest = await this.haversineService.findClosestStop(latSim, lngSim, { radioInicialMetros: 500 });
-        if (closest) {
-          const formatted = this.telegramFormatter.formatNearbyStopResponse(closest, pendingDest);
-          replyText =
-            `🎬 <b>Modo Demostración Activo:</b>\n` +
-            `<i>Simulando tu ubicación en: <b>${nombreSim}</b></i>\n\n` +
-            formatted.text;
-          parseMode = 'HTML';
-          replyMarkup = TECLADO_MOVITECH_TELEGRAM;
-          detectedIntent = 'SimulacionUbicacion';
-        }
+        const resultText = closest
+          ? this.telegramFormatter.formatNearbyStopResponse(closest, pendingDest).text
+          : 'Aún no hay paraderos verificados para mostrar en esta ubicación. No se inventarán líneas, distancias ni tarifas.';
+        replyText =
+          `🧪 <b>Modo de demostración:</b>\n` +
+          `<i>Ubicación simulada: <b>${nombreSim}</b>. No corresponde a tu GPS real.</i>\n\n` +
+          resultText;
+        parseMode = 'HTML';
+        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+        detectedIntent = 'SimulacionUbicacion';
       }
     }
 
@@ -508,11 +580,11 @@ export class TelegramService {
         const taxis = await this.taxisService.getCentralesRadioTaxi(comuna);
         const formatted = this.telegramFormatter.formatRadioTaxisResponse(taxis, comuna);
         replyText = formatted.text;
-        if (aiRes?.respuestaModelada) {
+        if (taxis.length > 0 && aiRes?.respuestaModelada) {
           replyText = `🚕 <i>${this.telegramFormatter.escapeHtml(aiRes.respuestaModelada)}</i>\n\n` + replyText;
         }
         parseMode = 'HTML';
-        replyMarkup = TECLADO_MOVITECH_TELEGRAM;
+        replyMarkup = createMovitechKeyboard(taxis.length === 0);
       } else if (intent === 'Consultar Horario' && this.horariosService && this.telegramFormatter) {
         if (lineaBuscada) {
           const dbHorarios = await this.horariosService.getHorariosPorLinea(lineaBuscada);
@@ -532,7 +604,6 @@ export class TelegramService {
         }
         replyMarkup = TECLADO_MOVITECH_TELEGRAM;
       } else if (intent === 'Buscar Ruta' && destination) {
-        // Enviar aviso y activar teclado nativo con botón de ubicación
         const locationPrompt =
           `📍 <b>Para encontrar tu parada más cercana y el mejor recorrido a ${destination}:</b>\n\n` +
           `Toca el botón <b>"📍 Compartir mi ubicación"</b> aquí abajo o selecciona una de las ubicaciones rápidas.`;
@@ -543,6 +614,17 @@ export class TelegramService {
             chatId.toString(),
             destination,
           );
+          if (
+            comparative.hasMissingVerifiedOptions &&
+            process.env.NODE_ENV !== 'production'
+          ) {
+            await this.sendMessage(
+              chatId,
+              'Faltan opciones de transporte verificadas. Puedes probar el flujo con una ubicación simulada de la Estación Quilpué; no mostrará datos reales ni reemplaza tu ubicación.',
+              'HTML',
+              createMovitechKeyboard(true),
+            );
+          }
           replyText = comparative.telegramResponse.text;
           if (aiRes?.respuestaModelada) {
             replyText = `🚌 <i>${this.telegramFormatter ? this.telegramFormatter.escapeHtml(aiRes.respuestaModelada) : aiRes.respuestaModelada}</i>\n\n` + replyText;
