@@ -47,8 +47,15 @@ describe('HU #2 - Nivel 1: Pruebas Unitarias de ComparativeFlowService y Formate
       // Modalidad 2: Colectivo
       expect(summary.comparativeData.colectivo).toBeDefined();
       expect(summary.comparativeData.colectivo.lineas).toBeTruthy();
-      expect(summary.comparativeData.colectivo.tarifaAdultoMayor).toContain('$600');
-      expect(summary.comparativeData.colectivo.tarifaGeneral).toContain('$850');
+      expect(summary.comparativeData.colectivo.tarifaAdultoMayor).toBe('No verificada');
+      const telegramColectivoSection = summary.telegramResponse.text
+        .split('2. COLECTIVO')[1]
+        ?.split('3. RADIO TAXI')[0] ?? '';
+      const webColectivoSection = summary.webResponse.text
+        .split('*2. Colectivo')[1]
+        ?.split('*3. Radio Taxi')[0] ?? '';
+      expect(telegramColectivoSection).not.toContain('Adulto Mayor');
+      expect(webColectivoSection).not.toContain('Adulto mayor');
       expect(summary.comparativeData.colectivo.frecuencia).toBeTruthy();
 
       // Modalidad 3: Radio Taxi

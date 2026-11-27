@@ -95,7 +95,7 @@ export class FormatterService {
       frecuencia: 'Cada 4-6 min',
     };
     text += `🚕 *2. Colectivo (${col.lineas})*\n`;
-    text += `💰 Adulto mayor: *${col.tarifaAdultoMayor}* | General: ${col.tarifaGeneral}\n`;
+    text += `💰 Tarifa general: *${col.tarifaGeneral}*\n`;
     text += `⏱️ Frecuencia: ${col.frecuencia} | Parada a solicitud\n\n`;
 
     // Bloque 3: Radiotaxis

@@ -152,7 +152,7 @@ export class ComparativeFlowService {
       colectivos.slice(0, 3).forEach((col, idx) => {
         webText += `*${idx + 1}. ${col.numeroLinea}*\n`;
         webText += `Pasa por: ${col.trazadoIda}\n`;
-        webText += `Tarifa Adulto Mayor: *$${col.tarifaAdultoMayor}* (General: $${col.tarifaDiurna})\n\n`;
+        webText += `Tarifa general: *$${col.tarifaDiurna}*\n\n`;
       });
       const encodedDest = encodeURIComponent(`${destination} Quilpue`);
       webText += `🗺️ Ver paradas en mapa:\nhttps://maps.google.com/?q=${encodedDest}`;

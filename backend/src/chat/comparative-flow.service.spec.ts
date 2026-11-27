@@ -64,6 +64,14 @@ describe('ComparativeFlowService', () => {
       expect(summary.comparativeData.microbus.tarifaAdultoMayor).toBe('No verificada');
       expect(summary.comparativeData.colectivo.tarifaAdultoMayor).toBe('No verificada');
       expect(summary.comparativeData.colectivo.lineas).toBe('Sin datos verificados');
+      const telegramColectivoSection = summary.telegramResponse.text
+        .split('2. COLECTIVO')[1]
+        ?.split('3. RADIO TAXI')[0] ?? '';
+      const webColectivoSection = summary.webResponse.text
+        .split('*2. Colectivo')[1]
+        ?.split('*3. Radio Taxi')[0] ?? '';
+      expect(telegramColectivoSection).not.toContain('Adulto Mayor');
+      expect(webColectivoSection).not.toContain('Adulto mayor');
       expect(summary.comparativeData.radiotaxi.tiempoEspera).toBeDefined();
       expect(summary.hasMissingVerifiedOptions).toBe(true);
 
@@ -94,6 +102,36 @@ describe('ComparativeFlowService', () => {
       expect(res?.web.options).toEqual([]);
       expect(res?.telegram.text).toContain('Aún no tenemos líneas de colectivos verificadas');
       expect(res?.telegram).toBeDefined();
+    });
+
+    it('debe omitir el beneficio adulto mayor en el detalle web de colectivos', async () => {
+      jest.spyOn(colectivosService, 'getColectivos').mockResolvedValue([
+        {
+          id: 'COL-1',
+          numeroLinea: 'Línea 1',
+          nombreLinea: 'Centro - Los Pinos',
+          comuna: 'Quilpué',
+          origen: 'Centro',
+          destino: 'Los Pinos',
+          trazadoIda: 'Centro - Los Pinos',
+          trazadoRegreso: 'Los Pinos - Centro',
+          frecuenciaMinutos: 5,
+          horarioInicio: '06:00',
+          horarioTermino: '22:00',
+          tarifaDiurna: 850,
+          tarifaNocturna: 1100,
+          tarifaAdultoMayor: 600,
+          accesibleAdultoMayor: false,
+          paraderosPrincipales: [],
+          fuenteUrl: 'https://example.com',
+        },
+      ]);
+
+      const result = await service.processSelection('user123', '2');
+
+      expect(result?.web.text).toContain('Tarifa general: *$850*');
+      expect(result?.web.text).not.toContain('Adulto Mayor');
+      expect(result?.web.text).not.toContain('$600');
     });
 
     it('debe advertir cuando no hay centrales de radiotaxi verificadas', async () => {

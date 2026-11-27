@@ -24,7 +24,7 @@ Estas consultas conforman el protocolo; no son resultados ejecutados.
 | C2 | Plaza | ¿Cómo voy desde la Plaza de Quilpué al Hospital? Dime la línea, el paradero más cercano, las tarifas general/adulto mayor y cada cuánto pasa. |
 | C3 | Municipalidad | Estoy en la Municipalidad de Quilpué, ¿qué línea tomo para llegar al Hospital, dónde espero, cuánto cuesta para adulto y adulto mayor, y cuál es el horario? |
 | C4 | Calle | Estoy en calle Freire con Los Carrera, ¿dónde espero y qué micro me lleva al Hospital? Incluye tarifa general/adulto mayor y frecuencia u horario. |
-| C5 | Colectivo | ¿Dónde tomo un colectivo desde el centro de Quilpué a Los Pinos? Dime el servicio, paradero, tarifas general/adulto mayor y frecuencia u horario. |
+| C5 | Colectivo | ¿Dónde tomo un colectivo desde el centro de Quilpué a Los Pinos? Dime el servicio, paradero, tarifa general y frecuencia u horario. |
 | C6 | Radiotaxi | Voy del Hospital de Quilpué al centro: ¿qué micro tomo, dónde espero, cuánto cuesta para adulto/adulto mayor y cada cuánto pasa? Como alternativa, indica un radiotaxi y su tarifa. |
 | C7 | Mañana temprano | ¿Cuál es la primera micro desde Villa Alemana al Hospital de Quilpué mañana temprano, dónde la tomo, cuánto cuesta para adulto/adulto mayor y cada cuánto pasa? |
 | C8 | Texto con faltas | kmo yego al ospital d quilpue en micro? donde tomo la micro, cuanto sale pa adulto o adulto mayor y cada cuanto pasa? |

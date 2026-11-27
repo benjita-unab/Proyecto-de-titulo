@@ -325,7 +325,7 @@ export class TelegramFormatterService {
     text += `⏱️ Frecuencia: ${this.escapeHtml(mb.frecuencia)}\n\n`;
 
     text += `🚕 <b>2. COLECTIVO (${this.escapeHtml(col.lineas)})</b>\n`;
-    text += `💰 Adulto Mayor: <b>${this.escapeHtml(col.tarifaAdultoMayor)}</b> | Gral: ${this.escapeHtml(col.tarifaGeneral)}\n`;
+    text += `💰 General: <b>${this.escapeHtml(col.tarifaGeneral)}</b>\n`;
     text += `⏱️ Frecuencia: ${this.escapeHtml(col.frecuencia)}\n\n`;
 
     text += `🚖 <b>3. RADIO TAXI (${this.escapeHtml(tx.centrales)})</b>\n`;
@@ -382,13 +382,12 @@ export class TelegramFormatterService {
       const nombre = this.escapeHtml(col.numeroLinea || col.nombreLinea);
       const recorrido = this.escapeHtml(col.trazadoIda || col.destino);
       const freq = col.frecuenciaMinutos ? `Cada ${col.frecuenciaMinutos} min` : 'No verificada';
-      const tarifaAM = col.tarifaAdultoMayor ? `$${col.tarifaAdultoMayor}` : 'No verificada';
       const tarifaGral = col.tarifaDiurna ? `$${col.tarifaDiurna}` : 'No verificada';
 
       text += `<b>${idx + 1}. 🚕 ${nombre}</b>\n`;
       text += `   📍 <b>Recorrido:</b> ${recorrido}\n`;
       text += `   ⏱️ <b>Frecuencia:</b> ${freq} (${this.escapeHtml(col.horarioInicio || 'horario no verificado')} a ${this.escapeHtml(col.horarioTermino || 'horario no verificado')})\n`;
-      text += `   💰 <b>Tarifa Adulto Mayor:</b> ${tarifaAM} | General: ${tarifaGral}\n`;
+      text += `   💰 <b>Tarifa General:</b> ${tarifaGral}\n`;
       if (col.fuenteUrl) {
         text += `   🔎 <a href="${this.escapeHtml(col.fuenteUrl)}">Fuente consultada</a>\n`;
       }
