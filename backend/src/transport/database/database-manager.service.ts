@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UnifiedSqliteSnapshot } from './unified-model.types';
 
 export interface DatabaseState {
   supabaseAvailable: boolean;
@@ -19,14 +20,8 @@ export class DatabaseManagerService implements OnModuleInit {
   private readonly HEALTH_CHECK_INTERVAL_MS = 60000; // 1 minuto
   private readonly sqliteDbPath: string;
 
-  // Almacenamiento local estructurado de contingencia SQLite (tabla relacional en disco)
-  private localSqliteStore: {
-    rutas: any[];
-    paradas: any[];
-    colectivos: any[];
-    radiotaxis: any[];
-    horarios: any[];
-  } = {
+  // Almacenamiento local estructurado de contingencia SQLite (Modelo Único Unificado)
+  private localSqliteStore: UnifiedSqliteSnapshot = {
     rutas: [],
     paradas: [],
     colectivos: [],
