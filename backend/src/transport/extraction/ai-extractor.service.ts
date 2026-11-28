@@ -2,9 +2,12 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import axios from 'axios';
-import { PuppeteerExtractor, IBrowserExtractor } from '../../scripts/extraer-tarifas-puppeteer';
+import { PuppeteerExtractor } from '../../scripts/extraer-tarifas-puppeteer';
+import type { IBrowserExtractor } from '../../scripts/extraer-tarifas-puppeteer';
 
 export interface StructuredTransportPayload {
+  fuenteUrl: string;
+  fechaExtraccion: string;
   rutas: Array<{
     idRecorrido: string;
     idTransporte: string;
@@ -12,6 +15,8 @@ export interface StructuredTransportPayload {
     sentido: string;
     callesPrincipales: string;
     frecuencia: string;
+    evidenciaFuente: string;
+    pasaHospitalQuilpue: boolean;
   }>;
   paradas: Array<{
     idParada: string;
@@ -20,12 +25,14 @@ export interface StructuredTransportPayload {
     latitud: number;
     longitud: number;
     comuna: string;
+    evidenciaFuente: string;
   }>;
   tarifas: Array<{
     tipoTransporte: string;
     nombreLinea: string;
     tarifaGeneral: number;
     tarifaAdultoMayor: number;
+    evidenciaFuente: string;
   }>;
 }
 
@@ -42,7 +49,7 @@ export class AiExtractorService {
 
   constructor(
     @Optional() private readonly configService?: ConfigService,
-    @Optional() customExtractor?: PuppeteerExtractor,
+    @Optional() customExtractor?: IBrowserExtractor,
   ) {
     const supabaseUrl =
       this.configService?.get<string>('SUPABASE_URL') || process.env.SUPABASE_URL;
@@ -70,6 +77,11 @@ export class AiExtractorService {
    */
   async extractAndStructureWithAi(sourceUrl: string): Promise<StructuredTransportPayload | null> {
     try {
+      if (!this.isOfficialSource(sourceUrl)) {
+        this.logger.warn(`Se rechazó una fuente de transporte no oficial: ${sourceUrl}`);
+        return null;
+      }
+
       this.logger.log(`Iniciando extracción con Puppeteer desde: ${sourceUrl}`);
       const rawHtmlOrText = await this.browserExtractor.fetchPageContent(sourceUrl);
 
@@ -94,13 +106,13 @@ Analiza la siguiente información de transporte público de Quilpué y Villa Ale
 Esquema requerido:
 {
   "rutas": [
-    { "idRecorrido": "REC-01", "idTransporte": "TRANS-01", "nombreRecorrido": "Texto", "sentido": "Ida y Retorno", "callesPrincipales": "Calles", "frecuencia": "Cada 10 min" }
+    { "idRecorrido": "REC-01", "idTransporte": "TRANS-01", "nombreRecorrido": "Texto exacto", "sentido": "Ida y Retorno", "callesPrincipales": "Texto exacto", "frecuencia": "Texto exacto", "evidenciaFuente": "Fragmento literal copiado de la fuente que prueba esos datos", "pasaHospitalQuilpue": false }
   ],
   "paradas": [
-    { "idParada": "PAR-01", "nombre": "Nombre", "direccion": "Dirección", "latitud": -33.048, "longitud": -71.443, "comuna": "Quilpué" }
+    { "idParada": "PAR-01", "nombre": "Nombre exacto", "direccion": "Dirección exacta", "latitud": -33.048, "longitud": -71.443, "comuna": "Quilpué", "evidenciaFuente": "Fragmento literal que contiene nombre, dirección y coordenadas" }
   ],
   "tarifas": [
-    { "tipoTransporte": "Microbús", "nombreLinea": "Línea 111", "tarifaGeneral": 450, "tarifaAdultoMayor": 150 }
+    { "tipoTransporte": "Microbús", "nombreLinea": "Línea 111", "tarifaGeneral": 450, "tarifaAdultoMayor": 150, "evidenciaFuente": "Fragmento literal que contiene línea y ambas tarifas" }
   ]
 }
 `;
@@ -122,8 +134,12 @@ Esquema requerido:
 
           const jsonStr = resp.data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (jsonStr) {
-            const parsed: StructuredTransportPayload = JSON.parse(jsonStr);
-            return this.validateAndNormalizePayload(parsed);
+            const parsed = JSON.parse(jsonStr);
+            return this.validateAndNormalizePayload({
+              ...parsed,
+              fuenteUrl: sourceUrl,
+              fechaExtraccion: new Date().toISOString(),
+            }, textSample, sourceUrl);
           }
         } catch (mErr: any) {
           this.logger.warn(`Modelo ${currentModel} falló en ai-extractor (${mErr.response?.status || mErr.message}). Probando alternativo...`);
@@ -141,10 +157,45 @@ Esquema requerido:
    * Tarea 4 (HU #6): Validación y normalización estricta antes de guardar
    * Valida esquema, rango de tarifas razonables y coordenadas dentro de Quilpué / Villa Alemana.
    */
-  public validateAndNormalizePayload(payload: StructuredTransportPayload): StructuredTransportPayload {
-    const validRutas = (payload.rutas || []).filter(
-      (r) => r.idRecorrido && r.nombreRecorrido && r.callesPrincipales,
-    );
+  public validateAndNormalizePayload(
+    payload: StructuredTransportPayload,
+    sourceText: string,
+    sourceUrl: string,
+  ): StructuredTransportPayload {
+    if (!this.isOfficialSource(sourceUrl)) {
+      return { fuenteUrl: sourceUrl, fechaExtraccion: payload.fechaExtraccion, rutas: [], paradas: [], tarifas: [] };
+    }
+
+    const normalize = (value: string | number) => String(value)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const text = normalize(sourceText);
+    const evidenceIsInSource = (evidence: string) =>
+      typeof evidence === 'string' && evidence.length > 0 && text.includes(normalize(evidence));
+    const valuesAreInEvidence = (evidence: string, values: Array<string | number>) => {
+      const normalizedEvidence = normalize(evidence || '');
+      return values.every((value) => normalizedEvidence.includes(normalize(value)));
+    };
+
+    const validRutas = (payload.rutas || []).filter((route) =>
+      route.idRecorrido
+      && route.nombreRecorrido
+      && route.callesPrincipales
+      && route.frecuencia
+      && evidenceIsInSource(route.evidenciaFuente)
+      && valuesAreInEvidence(route.evidenciaFuente, [
+        route.nombreRecorrido,
+        route.callesPrincipales,
+        route.frecuencia,
+      ]),
+    ).map((route) => ({
+      ...route,
+      pasaHospitalQuilpue: normalize(route.evidenciaFuente).includes('hospital')
+        && route.pasaHospitalQuilpue === true,
+    }));
 
     // Validación de coordenadas dentro de Quilpué y Villa Alemana (-33.15 a -32.95 lat, -71.55 a -71.25 lon)
     const validParadas = (payload.paradas || []).filter((p) => {
@@ -152,7 +203,15 @@ Esquema requerido:
       const lng = Number(p.longitud);
       const coordsValidas =
         !isNaN(lat) && !isNaN(lng) && lat >= -33.20 && lat <= -32.90 && lng >= -71.60 && lng <= -71.20;
-      return p.nombre && coordsValidas;
+      return p.nombre
+        && coordsValidas
+        && evidenceIsInSource(p.evidenciaFuente)
+        && valuesAreInEvidence(p.evidenciaFuente, [
+          p.nombre,
+          p.direccion,
+          p.latitud,
+          p.longitud,
+        ]);
     });
 
     // Validación de rangos de tarifas
@@ -160,14 +219,43 @@ Esquema requerido:
       const tg = Number(t.tarifaGeneral);
       const ta = Number(t.tarifaAdultoMayor);
       const tarifasValidas = tg >= 100 && tg <= 15000 && ta >= 0 && ta <= tg;
-      return t.nombreLinea && tarifasValidas;
+      return t.nombreLinea
+        && tarifasValidas
+        && evidenceIsInSource(t.evidenciaFuente)
+        && valuesAreInEvidence(t.evidenciaFuente, [
+          t.nombreLinea,
+          t.tarifaGeneral,
+          t.tarifaAdultoMayor,
+        ]);
     });
 
     return {
+      fuenteUrl: sourceUrl,
+      fechaExtraccion: payload.fechaExtraccion,
       rutas: validRutas,
       paradas: validParadas,
       tarifas: validTarifas,
     };
+  }
+
+  private isOfficialSource(sourceUrl: string): boolean {
+    try {
+      const url = new URL(sourceUrl);
+      const host = url.hostname.toLowerCase();
+      const officialHosts = [
+        'dtpr.gob.cl',
+        'mtt.gob.cl',
+        'quilpue.cl',
+        'docs.quilpue.cl',
+        'efe.cl',
+      ];
+      return url.protocol === 'https:'
+        && officialHosts.some((officialHost) =>
+          host === officialHost || host.endsWith(`.${officialHost}`),
+        );
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -180,35 +268,54 @@ Esquema requerido:
       return false;
     }
 
+    if (!payload.fuenteUrl || !this.isOfficialSource(payload.fuenteUrl)
+      || payload.rutas.some((route) =>
+        !route.evidenciaFuente
+        || !route.nombreRecorrido
+        || !route.callesPrincipales
+        || !route.frecuencia
+        || !route.pasaHospitalQuilpue && /hospital/i.test(route.evidenciaFuente))) {
+      throw new Error('No se guardan rutas sin una fuente oficial y evidencia verificable.');
+    }
+
+    if (payload.rutas.length === 0) {
+      this.logger.warn('[AiExtractor] No hay rutas con evidencia literal suficiente; no se guardaron datos.');
+      return false;
+    }
+
     if (!this.supabase) {
       this.logger.warn('[AiExtractor] Sin conexión a Supabase. Se mantiene en memoria.');
-      this.lastExtractedHash = serialized;
       return false;
     }
 
     try {
       this.logger.log(`[AiExtractor] Detectadas actualizaciones. Guardando en Supabase...`);
 
-      if (payload.rutas.length > 0) {
-        await this.supabase.from('recorrido_transporte').upsert(
-          payload.rutas.map((r) => ({
-            id_recorrido: r.idRecorrido,
-            id_transporte: r.idTransporte || 'TRANS-C02',
-            nombre_recorrido: r.nombreRecorrido,
-            sentido: r.sentido,
-            calles_principales: r.callesPrincipales,
-            frecuencia: r.frecuencia,
-          })),
-          { onConflict: 'id_recorrido' },
-        );
-      }
+      const { error } = await this.supabase.from('recorrido_transporte').upsert(
+        payload.rutas.map((route) => ({
+          id_recorrido: route.idRecorrido,
+          id_transporte: route.idTransporte,
+          nombre_recorrido: route.nombreRecorrido,
+          sentido: route.sentido,
+          calles_principales: route.callesPrincipales,
+          frecuencia: route.frecuencia,
+          pasa_hospital_quilpue: route.pasaHospitalQuilpue,
+          verificado: true,
+          fuente_url: payload.fuenteUrl,
+          evidencia_fuente: route.evidenciaFuente,
+          fecha_verificacion: payload.fechaExtraccion,
+          activo: true,
+        })),
+        { onConflict: 'id_recorrido' },
+      );
+      if (error) throw error;
 
       this.lastExtractedHash = serialized;
       this.logger.log('✅ [AiExtractor] Datos actualizados correctamente en Supabase.');
       return true;
     } catch (err: any) {
-      this.logger.error(`Error guardando datos en Supabase: ${err.message}. Entregando últimos datos guardados.`);
-      return false;
+      this.logger.error(`Error guardando datos en Supabase: ${err.message}.`);
+      throw err;
     }
   }
 }

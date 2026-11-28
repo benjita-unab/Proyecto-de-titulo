@@ -91,6 +91,14 @@ export class ChatController {
       const comuna = (queryResult as any).comuna;
       const taxis = await this.taxisService.getCentralesRadioTaxi(comuna);
       const textoComuna = comuna ? ` en ${comuna}` : ' en Quilpué';
+      if (taxis.length === 0) {
+        return sendReply({
+          text: `Aún no tenemos centrales de radiotaxi con contacto y autorización verificados${textoComuna}. Por seguridad, no mostraremos números sin confirmar.`,
+          showRadioTaxis: false,
+          taxis: [],
+        });
+      }
+
       const intro = aiRes?.respuestaModelada
         ? `${aiRes.respuestaModelada}\n\nAquí tiene las centrales de Radio Taxi autorizadas${textoComuna} para llamar con un solo toque:`
         : `Aquí tiene las centrales de Radio Taxi autorizadas${textoComuna} para llamar con un solo toque:`;

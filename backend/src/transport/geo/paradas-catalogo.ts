@@ -9,6 +9,8 @@ export interface ParadaData {
   esPuntoSeguro: boolean;
   tipoParada: string;
   lineasAsociadas: string;
+  verificado: boolean;
+  fuenteUrl: string | null;
 }
 
 export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
@@ -23,6 +25,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Microbús, Colectivo y Punto Seguro Taxi',
     lineasAsociadas: 'Línea 111, C02, Línea 4 Colectivo, Radio Taxi Los Lagos',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-QLP-02',
@@ -35,6 +39,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Microbús, Colectivo y Punto Seguro Taxi',
     lineasAsociadas: 'Líneas C02, C03, Q02, 108, Colectivos 1, 2, 3, 5',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-QLP-03',
@@ -47,6 +53,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Intermodal Metro, Microbús y Colectivo',
     lineasAsociadas: 'Tren Limache-Puerto, C02, C03, 111, Colectivos 1, 3, 6',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-QLP-04',
@@ -59,6 +67,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Microbús y Colectivo',
     lineasAsociadas: 'Q02, C02, Línea 2 Colectivo Belloto Sur',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-QLP-05',
@@ -71,6 +81,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Microbús y Colectivo',
     lineasAsociadas: 'Línea C03, 111, Línea 3 Colectivo',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-VLM-01',
@@ -83,6 +95,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Intermodal Metro, Microbús y Punto Seguro Taxi',
     lineasAsociadas: 'Tren Limache-Puerto, C02, 108, Q02, 105-D, Colectivos Locales',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-VLM-02',
@@ -95,6 +109,8 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Microbús',
     lineasAsociadas: 'Línea C02, 108',
+    verificado: false,
+    fuenteUrl: null,
   },
   {
     idParada: 'PAR-VLM-03',
@@ -107,5 +123,7 @@ export const CATALOGO_PARADAS_MARGA_MARGA: ParadaData[] = [
     esPuntoSeguro: true,
     tipoParada: 'Microbús y Punto Seguro Taxi',
     lineasAsociadas: '105-D, 108, Tren Limache-Puerto',
+    verificado: false,
+    fuenteUrl: null,
   },
 ];

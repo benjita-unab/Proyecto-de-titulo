@@ -95,7 +95,7 @@ export class FormatterService {
       frecuencia: 'Cada 4-6 min',
     };
     text += `🚕 *2. Colectivo (${col.lineas})*\n`;
-    text += `💰 Adulto mayor: *${col.tarifaAdultoMayor}* | General: ${col.tarifaGeneral}\n`;
+    text += `💰 Tarifa general: *${col.tarifaGeneral}*\n`;
     text += `⏱️ Frecuencia: ${col.frecuencia} | Parada a solicitud\n\n`;
 
     // Bloque 3: Radiotaxis
@@ -159,6 +159,16 @@ export class FormatterService {
     text += `🛡️ *${sp.nombre}*\n`;
     text += `📍 *Ubicación:* ${sp.direccion} (a ${safePointResult.distanciaMetros}m de ti)\n`;
     text += `🗺️ *Ver en mapa:* ${safePointResult.googleMapsUrl}\n\n`;
+    if (taxis.length === 0) {
+      text += `Aún no tenemos centrales con contacto y autorización verificados.`;
+      return {
+        text,
+        safePoint: sp,
+        taxis,
+        directionsUrl: safePointResult.googleMapsDirectionsUrl,
+      };
+    }
+
     text += `📞 *Centrales autorizadas listas para llamar:*\n`;
 
     taxis.slice(0, 3).forEach((t, i) => {

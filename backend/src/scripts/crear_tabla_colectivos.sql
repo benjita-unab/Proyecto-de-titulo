@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS public.colectivo (
     tarifa_adulto_mayor INTEGER NOT NULL DEFAULT 650,
     accesible_adulto_mayor BOOLEAN NOT NULL DEFAULT true,
     paraderos_principales TEXT,
+    pasa_hospital_quilpue BOOLEAN NOT NULL DEFAULT false,
+    verificado BOOLEAN NOT NULL DEFAULT false,
+    fuente_url TEXT,
+    evidencia_fuente TEXT,
+    fecha_verificacion TIMESTAMPTZ,
     activo BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -41,3 +46,4 @@ CREATE INDEX IF NOT EXISTS idx_colectivo_id_transporte ON public.colectivo(id_tr
 CREATE INDEX IF NOT EXISTS idx_colectivo_comuna ON public.colectivo(comuna);
 CREATE INDEX IF NOT EXISTS idx_colectivo_numero_linea ON public.colectivo(numero_linea);
 CREATE INDEX IF NOT EXISTS idx_colectivo_activo ON public.colectivo(activo);
+CREATE INDEX IF NOT EXISTS idx_colectivo_verificado ON public.colectivo(verificado) WHERE verificado = true;

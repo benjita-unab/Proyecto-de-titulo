@@ -54,7 +54,7 @@ describe('HU #2 - Nivel 2: Pruebas de Integración de Flujo Interactivo en Dos P
 
       expect(resPaso2.body).toBeDefined();
       expect(resPaso2.body.text).toContain('Líneas de Colectivos');
-      expect(resPaso2.body.text).toContain('Tarifa Adulto Mayor');
+      expect(resPaso2.body.text).not.toContain('Tarifa Adulto Mayor');
       expect(resPaso2.body.options).toBeDefined();
     });
   });

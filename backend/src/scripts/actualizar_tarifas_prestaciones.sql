@@ -15,10 +15,10 @@ ADD COLUMN IF NOT EXISTS frecuencia_estimada VARCHAR(50) DEFAULT 'Cada 10-15 min
 
 -- 2. Agregar columnas complementarias a servicio_radiotaxi
 ALTER TABLE public.servicio_radiotaxi
-ADD COLUMN IF NOT EXISTS tarifa_minima INTEGER DEFAULT 2500,
-ADD COLUMN IF NOT EXISTS tarifa_por_km INTEGER DEFAULT 800,
-ADD COLUMN IF NOT EXISTS recargo_nocturno INTEGER DEFAULT 500,
-ADD COLUMN IF NOT EXISTS maletero_silla_ruedas BOOLEAN DEFAULT true;
+ADD COLUMN IF NOT EXISTS tarifa_minima INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS tarifa_por_km INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS recargo_nocturno INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS maletero_silla_ruedas BOOLEAN DEFAULT false;
 
 -- 3. Actualizar valores predeterminados de microbuses oficiales de Quilpué y Villa Alemana
 UPDATE public.medio_transporte

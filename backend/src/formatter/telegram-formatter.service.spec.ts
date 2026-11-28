@@ -145,6 +145,57 @@ describe('TelegramFormatterService', () => {
     });
   });
 
+  describe('3.1 Formatos comparativos de colectivos y radiotaxis', () => {
+    it('no muestra la fila de beneficio adulto mayor para colectivos ni radiotaxis', () => {
+      const result = service.formatComparativeResponse('Plaza Quilpué', {
+        microbus: {
+          lineas: '108',
+          tarifaGeneral: '$450',
+          tarifaAdultoMayor: '$150',
+          frecuencia: '10 min',
+        },
+        colectivo: {
+          lineas: 'Línea 1',
+          tarifaGeneral: '$850',
+          tarifaAdultoMayor: '$600',
+          frecuencia: '5 min',
+        },
+        radiotaxi: {
+          centrales: 'Central verificada',
+          tarifaBase: 'Consultar con la central',
+          tiempoEspera: 'No verificado',
+        },
+      });
+
+      const colectivoSection = result.text.split('2. COLECTIVO')[1]?.split('3. RADIO TAXI')[0] ?? '';
+      const radiotaxiSection = result.text.split('3. RADIO TAXI')[1] ?? '';
+
+      expect(result.text).toContain('Adulto Mayor: <b>$150</b>');
+      expect(colectivoSection).toContain('General: <b>$850</b>');
+      expect(colectivoSection).not.toContain('Adulto Mayor');
+      expect(radiotaxiSection).not.toContain('Adulto Mayor');
+      expect(radiotaxiSection).not.toContain('Beneficio');
+    });
+
+    it('muestra solo la tarifa general en el detalle de colectivos', () => {
+      const result = service.formatColectivosResponse('Los Pinos', [
+        {
+          numeroLinea: 'Línea 1',
+          trazadoIda: 'Centro - Los Pinos',
+          frecuenciaMinutos: 5,
+          horarioInicio: '06:00',
+          horarioTermino: '22:00',
+          tarifaAdultoMayor: 600,
+          tarifaDiurna: 850,
+        },
+      ]);
+
+      expect(result.text).toContain('<b>Tarifa General:</b> $850');
+      expect(result.text).not.toContain('Adulto Mayor');
+      expect(result.text).not.toContain('$600');
+    });
+  });
+
   describe('4. Plantilla de Radio Taxis (formatRadioTaxisResponse)', () => {
     const mockTaxis: RadioTaxiDto[] = [
       {
@@ -189,11 +240,14 @@ describe('TelegramFormatterService', () => {
       expect(result.text).toContain('Porvenir 574, Limache');
       expect(result.text).toContain('$2.500 - $3.000');
       expect(result.text).toContain('Lun a Dom 24 horas');
+      expect(result.text).not.toContain('Adulto Mayor');
+      expect(result.text).not.toContain('Beneficio');
     });
 
     it('debe manejar contingencia ante lista vacía o indefinida', () => {
       const result = service.formatRadioTaxisResponse([]);
-      expect(result.text).toContain('En este momento no hay información de bases disponibles');
+      expect(result.text).toContain('contacto y autorización verificados');
+      expect(result.text).toContain('no mostraremos números sin confirmar');
     });
   });
 

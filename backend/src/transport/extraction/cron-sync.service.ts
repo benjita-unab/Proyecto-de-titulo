@@ -57,7 +57,7 @@ export class CronSyncService implements OnModuleInit, OnModuleDestroy {
       await this.databaseManager.syncSupabaseToSqlite();
 
       // 2. Extraer datos de transporte solo cuando corresponda
-      const sourceUrl = 'https://dtpr.mtt.gob.cl/';
+      const sourceUrl = 'https://dtpr.gob.cl/pe/gran-valparaiso/';
       const structured = await this.aiExtractor.extractAndStructureWithAi(sourceUrl);
 
       if (structured) {

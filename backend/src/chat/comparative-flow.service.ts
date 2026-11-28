@@ -59,33 +59,35 @@ export class ComparativeFlowService {
 
     const lineasMicros = micros.length > 0
       ? micros.map((m) => m.linea).slice(0, 3).join(', ')
-      : 'C02, 108, 111';
+      : 'No verificado';
     const lineasColectivos = colectivos.length > 0
       ? colectivos.map((c) => c.numeroLinea).slice(0, 3).join(', ')
-      : 'Línea 1, Línea 2, Línea 3';
+      : 'Sin datos verificados';
     const centralesTaxis = taxis.length > 0
       ? taxis.map((t) => t.nombre).slice(0, 2).join(', ')
-      : 'Taxiexpress Quilpué, Transporte 24 Horas';
+      : 'Consultar directorio oficial';
 
     const comparativeData = {
       microbus: {
         lineas: lineasMicros,
-        tarifaGeneral: '$450',
-        tarifaAdultoMayor: '$150 (Pase adulto mayor)',
-        frecuencia: 'Cada 10-15 min',
+        tarifaGeneral: 'No verificada',
+        tarifaAdultoMayor: 'No verificada',
+        frecuencia: 'No verificada',
       },
       colectivo: {
         lineas: lineasColectivos,
-        tarifaGeneral: '$850',
-        tarifaAdultoMayor: '$600 (Rebaja adulto mayor)',
-        frecuencia: 'Cada 4-6 min',
+        tarifaGeneral: 'No verificada',
+        tarifaAdultoMayor: 'No verificada',
+        frecuencia: 'No verificada',
       },
       radiotaxi: {
         centrales: centralesTaxis,
-        tarifaBase: '$2.500 - $3.200',
-        tiempoEspera: 'Inmediato a domicilio',
+        tarifaBase: 'Consultar con la central',
+        tiempoEspera: 'No verificado',
       },
     };
+    const hasMissingVerifiedOptions =
+      micros.length === 0 || colectivos.length === 0 || taxis.length === 0;
 
     const webResponse = this.formatterService.formatComparativeResponse(destination, comparativeData);
     const telegramResponse = this.telegramFormatter.formatComparativeResponse(destination, comparativeData);
@@ -95,6 +97,7 @@ export class ComparativeFlowService {
       comparativeData,
       webResponse,
       telegramResponse,
+      hasMissingVerifiedOptions,
     };
   }
 
@@ -127,9 +130,9 @@ export class ComparativeFlowService {
           linea: r.linea,
           recorrido: r.recorrido,
           tipo: r.tipo,
-          tarifaAdultoMayor: '$150 (Con pase adulto mayor)',
-          tarifaGeneral: '$450',
-          frecuencia: 'Cada 10-15 min',
+          tarifaAdultoMayor: 'No verificada',
+          tarifaGeneral: 'No verificada',
+          frecuencia: 'No verificada',
         })),
       );
 
@@ -149,7 +152,7 @@ export class ComparativeFlowService {
       colectivos.slice(0, 3).forEach((col, idx) => {
         webText += `*${idx + 1}. ${col.numeroLinea}*\n`;
         webText += `Pasa por: ${col.trazadoIda}\n`;
-        webText += `Tarifa Adulto Mayor: *$${col.tarifaAdultoMayor}* (General: $${col.tarifaDiurna})\n\n`;
+        webText += `Tarifa general: *$${col.tarifaDiurna}*\n\n`;
       });
       const encodedDest = encodeURIComponent(`${destination} Quilpue`);
       webText += `🗺️ Ver paradas en mapa:\nhttps://maps.google.com/?q=${encodedDest}`;
@@ -169,8 +172,10 @@ export class ComparativeFlowService {
         selectedType: 'radiotaxi',
         destination,
         web: {
-          text: `Aquí tiene las centrales de Radio Taxi autorizadas para llamar a ${destination}:`,
-          showRadioTaxis: true,
+          text: taxis.length > 0
+            ? `Aquí tiene las centrales de Radio Taxi autorizadas para llamar a ${destination}:`
+            : 'Aún no tenemos centrales de radiotaxi con contacto y autorización verificados. Por seguridad, no mostraremos números sin confirmar.',
+          showRadioTaxis: taxis.length > 0,
           taxis,
         },
         telegram,

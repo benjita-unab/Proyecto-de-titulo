@@ -1,10 +1,19 @@
-# 📑 Registro Oficial de Pruebas Unitarias y Plan de Pruebas
+# 📑 Registro de Pruebas Unitarias y Plan de Pruebas
 
 **Proyecto:** Aplicación de Transporte para Adultos Mayores (Quilpué, Villa Alemana y Marga Marga / Limache)  
 **Entorno:** NestJS / Jest / TypeScript / Supabase  
-**Total de Suites de Pruebas Unitarias:** 14 Suites  
-**Total de Pruebas Unitarias Registradas:** 128 Tests (100% pasando)  
-**Pruebas de Integración (E2E):** 2 Suites / 5 Tests (100% pasando)  
+**Última ejecución registrada:** 27 de noviembre de 2026
+
+- **Unitarias completas:** 15 suites / 140 pruebas aprobadas.
+- **Unitarias dirigidas de Telegram, flujo comparativo, radiotaxis y formato:** 4 suites / 70 pruebas aprobadas.
+- **Unitarias complementarias HU #2/HU #3:** 27 de 29 aprobadas; 2 fallidas en expectativas antiguas.
+- **Build de NestJS:** aprobado.
+- **E2E:** 2 de 5 aprobadas; 3 fallidas.
+- **Integración:** 12 de 19 aprobadas; 7 fallidas.
+
+> Estos resultados corresponden al árbol de trabajo local de esa fecha, no a una versión publicada. Las pruebas unitarias no demuestran que existan servicios reales cargados en Supabase ni que sus datos estén vigentes.
+
+La ejecución detallada, los resultados por HU y sus justificaciones se consolidan en la sección 6 de este mismo documento.
 
 ---
 
@@ -20,18 +29,20 @@
 | **PR #10** | Comparación de horarios dispositivo e itinerario oficial backend | [`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts) | 7 tests |
 | **PR #11** | Creación tabla de horario de servicio e integración con chat | [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 2 tests |
 | **PR #12** | Diseñar extractor y poblamiento de horarios en Supabase (HU #22) | [`chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/test/chat-horarios.e2e-spec.ts) / `poblar-horarios.ts` | 4 tests E2E |
-| **HU #53 (Tarea 1-3)** | Radiotaxis: Dashboard, tablas y extractor web contingente | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) / [`chat.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/chat.controller.spec.ts) | 3 tests unitarios |
+| **HU #53 (Tarea 1-3)** | Radiotaxis: consulta segura de centrales verificadas | [`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts) | 5 pruebas unitarias; no verifica centrales reales |
 | **HU #54 (Tarea 1)** | Formateo accesible Telegram (HTML, emojis, sanitización) | [`telegram-formatter.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/formatter/telegram-formatter.service.spec.ts) | 15 tests |
 | **HU #54 (Tarea 2)** | Controlador de Webhook seguro y servicio Telegram (Nest.js) | [`telegram.controller.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.controller.spec.ts) | 5 tests |
 | **HU #54 (Tarea 3-4) + HU #2** | Botones inline en Telegram, flujo comparativo de 3 medios y notas de voz | [`telegram.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/telegram.service.spec.ts) / [`audio-transcription.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/telegram/audio-transcription.service.spec.ts) | 44 tests (37 Telegram + 7 Audio) |
-| **PR #22 (HU #5)** | Incorporar colectivos de Quilpué como tercer medio de transporte (T1-T5) | [`colectivos.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/colectivos/colectivos.service.spec.ts) | 6 tests unitarios |
+| **PR #22 (HU #5)** | Incorporar colectivos de Quilpué como tercer medio de transporte (T1-T5) | [`colectivos.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/colectivos/colectivos.service.spec.ts) | 4 pruebas unitarias; filtra filas verificadas |
 | **PR #23 (HU #3)** | Geolocalización y parada más cercana con fórmula Haversine (T1-T7) | [`haversine.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/geo/haversine.service.spec.ts) | 15 tests unitarios |
-| **HU #2** | Sistema de selección comparativa de 3 medios y flujo interactivo (T1-T5) | [`comparative-flow.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/comparative-flow.service.spec.ts) | 7 tests unitarios |
-| **Actualización Reciente** | Integración total Telegram con botones interactivos y suite completa | Todas las suites unitarias y E2E | 128 tests unitarios + 5 E2E (100% pasando) |
+| **HU #2** | Sistema de selección comparativa de 3 medios y flujo interactivo (T1-T5) | [`comparative-flow.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/comparative-flow.service.spec.ts) | 8 pruebas unitarias; valida mensajes cuando faltan datos verificados |
+| **Ejecución local (27-11-2026)** | Telegram, transporte, endpoints y pipeline | Unitarias, E2E e integración ejecutadas por separado | 140/140 unitarias principales; 27/29 unitarias complementarias; 2/5 E2E; 12/19 integración |
 
 ---
 
-## 2. Detalle Exhaustivo de Pruebas Unitarias (94 Tests)
+## 2. Detalle de Suites Unitarias
+
+La lista siguiente documenta casos representativos. El conteo vigente de la suite completa es 140 pruebas en 15 suites; esta lista no debe usarse como recuento total.
 
 ### Suite 1: Horarios de Servicio ([`horarios.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.spec.ts))
 > **Objetivo:** Verificar la lógica de franjas horarias y comparación con la hora del dispositivo para adultos mayores (HU #22).
@@ -92,11 +103,15 @@
 ---
 
 ### Suite 6: Servicio de Radiotaxis ([`taxis.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.spec.ts))
-> **Objetivo:** Asegurar la consulta de contactos de radiotaxis desde Supabase y disponibilidad de contingencia (HU #53).
+> **Objetivo:** Publicar únicamente centrales cuya autorización, fuente y evidencia estén verificadas (HU #53).
 
 - [x] **`TaxisService > should be defined`**: Verificación de instanciación del servicio.
-- [x] **`TaxisService > getCentralesRadioTaxi > debe devolver al menos 2 centrales autorizadas con nombre, telefono y direccion (CA-3.1 y CA-3.3)`**: Comprueba que la lista retorne centrales autorizadas de Limache con sus teléfonos en formato E.164 listos para discado.
-- [x] **`TaxisService > getCentralesRadioTaxi > debe mantener disponibilidad con lista de contingencia si no hay conexion`**: Garantiza la disponibilidad 100% offline ante fallos de conexión (CA-3.4).
+- [x] **`getCentralesRadioTaxi > no debe inventar ni mostrar centrales si Supabase no está configurado`**: Devuelve una lista vacía segura.
+- [x] **`getCentralesRadioTaxi > debe mantener la lista vacía si se pierde la conexión`**: No usa una contingencia de contactos sin verificar.
+- [x] **`getCentralesRadioTaxi > debe usar una respuesta vacía hasta verificar fuentes y autorización`**: No presenta contactos sin respaldo suficiente.
+- [x] **`getCentralesRadioTaxi > debe registrar y manejar errores de esquema`**: Registra el error y devuelve una lista vacía para no interrumpir el webhook.
+
+La suite no comprueba disponibilidad offline ni centrales reales: esas afirmaciones de versiones anteriores se retiran.
 
 ---
 
@@ -170,14 +185,14 @@
 ---
 
 ### Suite 12: Colectivos de Quilpué ([`colectivos.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/colectivos/colectivos.service.spec.ts))
-> **Objetivo:** Incorporar colectivos de Quilpué como tercer medio de transporte, tarifas diurnas, nocturnas y preferenciales para adultos mayores, trazados y puntos de espera (HU #5 / PR #22).
+> **Objetivo:** Evitar publicar líneas o puntos de espera sin verificación de fuente (HU #5 / PR #22).
 
 - [x] **`ColectivosService > should be defined`**: Instanciación correcta del servicio.
-- [x] **`ColectivosService > getColectivos > debe devolver todas las líneas de colectivos de contingencia si no se especifica filtro`**: Valida las líneas 1, 2, 3, 4 y 5 con tarifas adulto mayor ($600) y diurna ($850).
-- [x] **`ColectivosService > getColectivos > debe filtrar colectivos por destino relevante (ej. Los Pinos o Belloto)`**: Búsqueda contextual sobre trazados y paraderos.
-- [x] **`ColectivosService > getColectivos > debe soportar búsqueda sin acentos ni distinción de mayúsculas`**: Búsqueda insensible a acentos ("quilpue" vs "QUILPUÉ").
-- [x] **`ColectivosService > getColectivos > debe usar catálogo de contingencia si Supabase no está disponible o falla`**: Resiliencia con catálogo precargado y latencia < 1.5s.
-- [x] **`ColectivosService > getPuntosEsperaColectivo > debe devolver puntos de espera predefinidos y filtrar por línea`**: Puntos clave como Garita Belloto Norte, Plaza de Quilpué, Hospital y Terminal El Retiro.
+- [x] **`getColectivos > no publica el catálogo local que carece de fuentes verificadas`**: El catálogo candidato no basta para mostrar servicios.
+- [x] **`getColectivos > publica sólo registros de Supabase con evidencia y fuente HTTPS`**: Verifica que la consulta aplique el filtro `verificado`.
+- [x] **`getPuntosEsperaColectivo > no publica puntos de espera sin verificación de fuente`**: Devuelve una lista vacía.
+
+Estas pruebas no validan recorridos, tarifas ni paraderos de colectivos reales.
 
 ---
 
@@ -198,21 +213,25 @@
 ---
 
 ### Suite 14: Sistema Comparativo de 3 Medios de Transporte ([`comparative-flow.service.spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/chat/comparative-flow.service.spec.ts))
-> **Objetivo:** Flujo interactivo que compara Microbuses, Colectivos y Radiotaxis frente a un mismo destino con costos, frecuencias y selección guiada por pasos (HU #2 / PR #22-23).
+> **Objetivo:** Comprobar la navegación del menú comparativo y la respuesta segura cuando no existen servicios verificados (HU #2 / PR #22-23).
 
-- [x] **`ComparativeFlowService > should be defined`**: Instanciación del orquestador comparativo.
-- [x] **`ComparativeFlowService > Gestión de sesiones de usuario > debe registrar, recuperar y limpiar el destino consultado`**: Manejo de estado en memoria con TTL de 15 minutos.
-- [x] **`ComparativeFlowService > generateComparativeSummary > debe generar el resumen comparativo de los 3 medios de transporte`**: Comparativa con tarifas diferenciadas para adulto mayor ($150 micro, $600 colectivo, $2.500-$3.200 radiotaxi).
-- [x] **`ComparativeFlowService > processSelection > debe entregar detalle de microbuses al seleccionar opción 1 o "micro"`**: Retorno de líneas, recorridos y horarios.
-- [x] **`ComparativeFlowService > processSelection > debe entregar detalle de colectivos al seleccionar opción 2 o "colectivo"`**: Retorno de colectivos de Quilpué y enlace cartográfico.
-- [x] **`ComparativeFlowService > processSelection > debe entregar centrales de radiotaxi al seleccionar opción 3 o "taxi"`**: Activación de discado rápido para centrales autorizadas.
-- [x] **`ComparativeFlowService > processSelection > debe devolver null para una entrada que no corresponde a selección válida`**: Manejo de opciones fuera de menú.
+- [x] Instanciación del orquestador.
+- [x] Gestión de sesiones: guarda, recupera y limpia el destino del usuario.
+- [x] Resumen comparativo: incluye microbús, colectivo y radiotaxi; marca tarifas y opciones como no verificadas cuando faltan datos.
+- [x] Selección de microbús: procesa la opción, pero la prueba no acredita un recorrido real.
+- [x] Selección de colectivo: confirma el mensaje de falta de líneas verificadas.
+- [x] Selección de radiotaxi: confirma el mensaje de falta de contactos verificados.
+- [x] Entrada inválida: devuelve `null` para una selección desconocida.
+
+Los valores de tarifas y centrales descritos en expectativas antiguas no se consideran resultados actuales.
 
 ---
 
 ## 3. Pruebas de Integración End-to-End (E2E)
 
 Ubicación: [`test/chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/test/chat-horarios.e2e-spec.ts)
+
+**Última ejecución de `npm run test:e2e -- --runInBand`: 2/5 aprobadas y 3 fallidas.** Dos pruebas excedieron el timeout de 5 segundos; otra recibió una respuesta de aclaración en vez del texto esperado. Los casos siguientes describen pruebas definidas, no una aprobación completa actual.
 
 - [x] **`POST /api/chat - debe responder consulta de horarios generales en servicio`**: Prueba flujo completo de horarios en Supabase para día hábil.
 - [x] **`POST /api/chat - debe alertar FUERA_DE_HORARIO cuando el cliente consulta tarde en la noche`**: Simula hora del teléfono de adulto mayor fuera de servicio (`22:45 hrs`) y valida banner `FUERA DE HORARIO`.
@@ -227,8 +246,8 @@ Ubicación: [`test/chat-horarios.e2e-spec.ts`](file:///c:/Users/benja/Documents/
 Todos los siguientes comandos deben ejecutarse desde la carpeta `backend/`:
 
 ```powershell
-# 1. Ejecutar TODAS las pruebas unitarias (94 tests en 11 suites)
-npm test
+# 1. Ejecutar todas las pruebas unitarias
+npm test -- --runInBand
 
 # 2. Ejecutar pruebas unitarias con reporte detallado de cada test individual
 npx jest --verbose
@@ -290,19 +309,27 @@ npm run test:e2e
 npx jest --config ./test/jest-e2e.json test/chat-horarios.e2e-spec.ts
 ```
 
+### Integración HU2/HU3/HU6
+
+Las suites `*.integration-spec.ts` no están incluidas en `npm test` ni en `npm run test:e2e`. En la ejecución dirigida del 27-11-2026, HU2 obtuvo 4/8, HU3 3/6 y HU6 5/5: **12/19 aprobadas y 7/19 fallidas**. Las fallas de HU2 esperan tarifas, colectivos o radiotaxis verificados que no están disponibles, o textos de respuesta anteriores; las de HU3 esperan paraderos/puntos seguros reales que no están cargados. El benchmark de HU2 sí pasó dentro del límite de 1,5 s en el backend de pruebas; HU6 aprobó cinco casos con Gemini simulado y fallback local.
+
+Como ejecución adicional, las suites `test/unit/hu2-comparativo.spec.ts` y `test/unit/hu3-haversine.spec.ts` dieron **27/29 aprobadas**: HU2 aprobó 9/11 y HU3 18/18. No están incluidas en el total principal de 140 pruebas, que corresponde a las suites bajo `src/`. Los dos fallos de HU2 esperan tarifas fijas no verificadas y un teclado de solo dos filas, mientras la respuesta actual agrega una fila de acciones. El detalle por caso está en la sección 6.
+
+El Hito 3 del informe de referencia identifica las HU #7–#10 como planificadas. No se encontraron en el repositorio suites o resultados que permitan atribuirles una ejecución; no deben marcarse como aprobadas por las pruebas internas HU #2, HU #3 o HU #6.
+
 ### Scripts de Gestión de Base de Datos (Supabase):
 
 ```powershell
-# Poblar / Extraer datos de radiotaxis automáticamente desde la web a Supabase
+# Guardar candidatos de radiotaxi inactivos y no verificados en Supabase
 npm run db:populate-radiotaxis
 
-# Poblar base de datos con recorridos de microbuses
+# Sincronizar filas de transporte del script (no implica que queden verificadas)
 npm run db:populate
 
 # Poblar horarios de servicio de microbuses
 npm run db:populate-horarios
 
-# Limpiar todas las tablas en Supabase (incluyendo servicio_radiotaxi)
+# ADVERTENCIA: elimina datos; no ejecutar para validar servicios ni pruebas
 npm run db:clean
 ```
 
@@ -316,44 +343,52 @@ npm run build
 
 ---
 
-## 5. Módulo de Extracción y Población Multicomunal (Quilpué y Villa Alemana)
+## 5. Trazabilidad de servicios de microbuses, colectivos y radiotaxis
 
-> **Objetivo:** Permitir la transición y soporte de transporte público y radio taxis para las comunas de Quilpué y Villa Alemana (Marga Marga), manteniendo el esquema relacional en Supabase y la compatibilidad con el asistente conversacional para adultos mayores.
+Los servicios están conectados al flujo comparativo de Telegram, pero eso no significa que haya datos reales publicables. El bot debe mostrar solo filas con fuente y verificación; hoy, las pruebas y los scripts disponibles no acreditan un catálogo operativo de Quilpué.
 
-### A. Fuentes Web Conectadas
-1. **Moovit Valparaíso y Marga Marga:**  
-   `https://moovitapp.com/tripplan/valparaiso_y_vina_del_mar-3121/lines/es?ref=16&customerId=4908`  
-   *Uso:* Consulta de líneas y trazados de transporte metropolitano con respaldo de datos de alta fidelidad.
-2. **TodoRadioTaxi Villa Alemana:**  
-   `https://todoradiotaxi.cl/villa-alemana/`  
-   *Uso:* Scraping directo mediante Cheerio extrayendo centrales, teléfonos, direcciones y horarios.
-3. **Páginas Amarillas Quilpué:**  
-   `https://www.amarillas.cl/b/radio-taxi-las-24-horas/quilpue`  
-   *Uso:* Extracción estructurada de JSON-LD / `__NEXT_DATA__` con centrales verificadas de Quilpué.
+| Servicio | Consulta y criterio para mostrar | Evidencia actual | Estado y justificación |
+|---|---|---|---|
+| Microbuses | `RutasService` consulta `recorrido_transporte` con `activo=true`, `verificado=true`, `fuente_url` y `evidencia_fuente`. | La integración HU3 obtuvo cero paraderos verificados; la HU2 no acreditó líneas con registros verificables. El seed de [`poblar-transporte.ts`](./backend/src/scripts/poblar-transporte.ts) deja filas pendientes sin fuente/evidencia. | **No acreditado para uso real.** No se publica un recorrido solo por estar en una lista o aparecer en un mapa; hay que verificar operador, trazado, fecha y fuente. |
+| Colectivos | `ColectivosService` requiere registro activo/verificado, URL HTTPS y evidencia. | [`poblar-colectivos.ts`](./backend/src/scripts/poblar-colectivos.ts) marca las líneas candidatas inactivas y `verificado=false`; los puntos de espera devuelven lista vacía. La prueba unitaria espera ese estado seguro. | **Sin líneas publicables.** Los trazados, horarios y tarifas que aparecían en versiones anteriores del documento eran datos candidatos, no resultados oficiales comprobados. |
+| Radiotaxis | `TaxisService` consulta `servicio_radiotaxi` con `activo=true`, `autorizada=true`, `verificado=true`, fuente, evidencia y fecha de verificación. | [`poblar-radiotaxis.ts`](./backend/src/scripts/poblar-radiotaxis.ts) guarda candidatos como inactivos, no autorizados y no verificados. La prueba unitaria comprueba lista vacía segura y manejo del error de esquema. | **Sin contactos publicables.** Directorios comerciales o páginas de empresas no prueban autorización vigente; no se muestran teléfonos sin confirmación. En la ejecución de integración el esquema de Supabase no tenía la columna `verificado`. |
 
-### B. Datos Oficiales Cargados en Supabase
-* **Tabla `medio_transporte` (6 Líneas):**
-  - `TRANS-C02`: Línea C02 (Peumo - Villa Alemana - Belloto Norte - Quilpué) | TMV
-  - `TRANS-108`: Línea 108 (Peumo / Peñablanca - Mena - Pompeya) | Fenur S.A.
-  - `TRANS-C03`: Línea C03 (Los Pinos - Estación Quilpué) | TMV
-  - `TRANS-111`: Línea 111 (Los Pinos - Hospital - Peyronet - Playa Ancha) | Fenur S.A.
-  - `TRANS-Q02`: Línea Q02 (Villa Alemana - Quilpué - Viña del Mar) | TMV Marga Marga
-  - `TRANS-105D`: Línea 105-D (Peñablanca - Troncal Sur - Plaza Victoria) | Fenur S.A.
-* **Tabla `recorrido_transporte` (6 Trazados):**
-  - Puntos y destinos emblemáticos contextuales: *Estación Metro Villa Alemana*, *Estación Metro Quilpué*, *Plaza de Quilpué*, *Hospital de Quilpué*, *Centro Villa Alemana*, *Feria El Belloto*, *Belloto Norte*, *Los Pinos*, *Peumo*, *Peñablanca*, *Troncal Sur*, etc.
-* **Tabla `horario_servicio` (18 Franjas Horarias):**
-  - Franjas diferenciadas para Lunes a Viernes, Sábados y Domingos/Festivos.
-* **Tabla `servicio_radiotaxi` (5 Centrales Reales Activas):**
-  - `TAXI-VLM-01`: Radio Taxi Aracis Vía (+56989005971 / Madrid 2594, Villa Alemana)
-  - `TAXI-VLM-02`: Radio Taxi Cartagena (+56956327251 / Covadonga 246, Villa Alemana)
-  - `TAXI-VLM-03`: Radio Taxi Villa Alemana C & B (+56323176457 / Los Peumos 2140, Villa Alemana)
-  - `TAXI-QLP-04`: Taxiexpress Quilpué (+56989795644 / Pje Campo Lindo 2695, Quilpué)
-  - `TAXI-QLP-05`: Radio Taxi Transporte Privado 24 Horas (+56997996241 / Lago Lanalhue 2405, Quilpué)
+### Estado de la base y pruebas
 
-### C. Módulos Adaptados en el Backend
-- **NLP ([`nlp.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/nlp/nlp.service.ts)):** Captura de códigos de líneas alfanuméricos con letras y guiones (`C02`, `Q02`, `105-D`, `108`, `111`).
-- **Rutas ([`rutas.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/rutas/rutas.service.ts)):** Filtrado de contingencia y búsqueda por palabras clave (`quilpue`, `alemana`, `belloto`, `pinos`, `hospital`, `estacion`, `plaza`).
-- **Horarios ([`horarios.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/horarios/horarios.service.ts)):** Soporte de líneas alfanuméricas de Marga Marga.
-- **Taxis ([`taxis.service.ts`](file:///c:/Users/benja/Documents/GitHub/Proyecto-de-titulo/backend/src/transport/taxis/taxis.service.ts)):** Contingencia oficial con discado directo para Villa Alemana y Quilpué.
+- Los botones/handlers permiten seleccionar microbús, colectivo o radiotaxi. Al no haber datos verificados, el bot informa que no hay resultados confirmados; una lista vacía es deliberada y no equivale a que el servicio no exista en la comuna.
+- [`migrar-verificacion-fuentes.sql`](./backend/src/scripts/migrar-verificacion-fuentes.sql) agrega campos de verificación, pero el código local no demuestra que esa migración se haya aplicado a la instancia Supabase usada por Telegram.
+- No afirmar que hay seis recorridos oficiales, 18 horarios cargados ni cinco centrales activas: esos números se eliminaron porque no tienen respaldo reproducible en la ejecución actual.
+- Para habilitar resultados hacen falta: aplicar y comprobar la migración en la base correcta; reunir fuentes oficiales o confirmación directa; registrar evidencia y fecha por fila; activar únicamente los registros revisados; repetir integración y prueba real por Telegram.
+- Los resultados por suite, las causas de fallas y los criterios pendientes se consolidan en la sección 6 de este documento.
 
+---
+
+## 6. Ejecución detallada por HU y estado del Hito 3
+
+Las suites complementarias de `test/unit/` y `test/integration/` se ejecutaron de forma dirigida el 27-11-2026. Estos resultados describen el árbol de trabajo local de esa fecha; no son evidencia de una versión desplegada ni sustituyen las pruebas de aceptación con usuarios.
+
+| HU / suite | Qué hace la prueba | Resultado | ¿Se cumple? Justificación |
+|---|---|---:|---|
+| HU #2 — Unitaria [`hu2-comparativo.spec.ts`](./backend/test/unit/hu2-comparativo.spec.ts) | Verifica resumen de tres medios, formato de botones, selecciones por número/texto/callback, manejo de sesión y latencia en memoria. | **9/11** | **Parcial.** Fallan dos expectativas: tarifas fijas de $150/$450 aunque el servicio responde “No verificada” si no hay fuente comprobable, y teclado de dos filas aunque la interfaz actual agrega una fila de acciones para reiniciar/finalizar. Las demás pruebas pasan. |
+| HU #3 — Unitaria [`hu3-haversine.spec.ts`](./backend/test/unit/hu3-haversine.spec.ts) | Comprueba distancias y bordes, validación de coordenadas, selección y ampliación de radio con paradas simuladas, filtrado seguro, enlaces Maps y tiempo del cálculo local. | **18/18** | **Cumple el alcance unitario.** No demuestra que los puntos del catálogo sean paraderos reales, ni valida distancia caminable o exactitud en terreno. |
+| HU #2 — Integración [`hu2-flujo-interactivo.integration-spec.ts`](./backend/test/integration/hu2-flujo-interactivo.integration-spec.ts) | Prueba el API, selección de medios, callback de Telegram, recuperación sin sesión y latencia en 15 ciclos. | **4/8** | **Parcial; aceptación integral no cumplida.** Pasan resumen inicial, desglose de microbús, recuperación sin sesión y latencia (P95 226 ms y 253 ms, menor a 1.500 ms). Fallan aserciones que esperan tarifa/colectivos y radiotaxis verificados o un texto anterior del callback. Supabase además informa que falta la columna `servicio_radiotaxi.verificado`; el flujo no debe mostrar contactos sin confirmar. |
+| HU #3 — Integración [`hu3-ubicacion.integration-spec.ts`](./backend/test/integration/hu3-ubicacion.integration-spec.ts) | Valida coordenadas en el endpoint, consulta paraderos persistidos, solicita punto seguro y mide 50 consultas consecutivas. | **3/6** | **Parcial; recomendación real no acreditada.** Pasan los rechazos de coordenadas inválidas/fuera de zona y la medición local de latencia. Fallan la búsqueda de paradero, el punto seguro y la consulta de paraderos persistidos porque no hay filas verificadas disponibles. |
+| HU #6 — Integración [`hu6-pipeline-ia.integration-spec.ts`](./backend/test/integration/hu6-pipeline-ia.integration-spec.ts) | Verifica el pipeline con Gemini simulado, fallback local, eventos MQTT, failover del almacén local y latencia. | **5/5** | **Cumple los casos automatizados simulados.** No acredita conexión a Gemini real ni una base SQLite real: el respaldo del proyecto es JSON/en memoria. |
+| HU #2 — Sistema [`hu2-resultados-sistema.csv`](./backend/test/system/hu2-resultados-sistema.csv) | Registra 15 flujos comparativos ejecutados directamente en memoria, con paso 1, paso 2, coherencia y elementos visuales. | **15 filas registradas** | **Evidencia técnica parcial, no aceptación de usuario.** No demuestra interacción real por Telegram, Supabase, dispositivo ni conteo de toques; tampoco registra fecha/build por caso. |
+| HU #3 — Sistema [`hu3-resultados-sistema.csv`](./backend/test/system/hu3-resultados-sistema.csv) | Evalúa 20 ubicaciones contra paraderos disponibles y compara Haversine con una referencia geodésica independiente. | **0/20 evaluables** | **No evaluable para exactitud.** No equivale a 0% de precisión: faltan paraderos verificados para calcular y contrastar las distancias. El CSV no debe presentarse como aprobación. |
+| HU #6 — Sistema [`hu6-resultados-sistema.csv`](./backend/test/system/hu6-resultados-sistema.csv) | Registra 30 prompts, intención/destino y latencias de IA y fallback. | **30 filas; calidad factual no evaluable** | **No acredita respuestas correctas de transporte.** El CSV no guarda las respuestas completas ni fuentes contrastadas; el generador puede simular IA cuando no hay `GEMINI_API_KEY`. |
+
+### Criterios de aceptación y pruebas manuales pendientes
+
+| Historia / prueba | Estado | Justificación |
+|---|---|---|
+| Hito 3 — HU #7 | **No ejecutada / sin evidencia** | El informe de referencia la presenta como parte del Sprint 3 planificado. No se encontró una suite, protocolo ejecutado ni resultado trazable en el repositorio. |
+| Hito 3 — HU #8 | **No ejecutada / sin evidencia** | No hay salida de pruebas ni evidencia que permita evaluar sus criterios. |
+| Hito 3 — HU #9 | **No ejecutada / sin evidencia** | Las pruebas internas HU #2/#3/#6 no corresponden automáticamente a esta historia ni demuestran sus criterios. |
+| Hito 3 — HU #10 | **No ejecutada / sin evidencia** | Sin casos ejecutados, fecha, resultado y evidencia no corresponde declarar cumplimiento. |
+| HU #3 — Línea base y calidad de información | **Parcial** | Se consolidaron tiempos declarados de plataformas y lineamientos L1–L4, pero faltan capturas, respuestas completas y contraste por fuente para clasificar las 30 respuestas de IA. |
+| HU #4 — Nueve consultas comparativas de MoviTech | **No ejecutada** | Existe un protocolo, pero faltan las nueve respuestas reales, capturas, fuentes verificadas y tres mediciones de tiempo/toques en celular. No se acredita 8/9 correctas, reducción de 50% ni máximo de cuatro pasos. |
+| Aceptación con adultos mayores | **No acreditada independientemente** | Hay registros declarados de tareas, tiempos y frustración, pero faltan trazabilidad verificable de participantes, protocolo, fecha y evidencia de sesión. |
+
+**Conclusión:** las pruebas unitarias confirman partes aisladas de la lógica y algunas métricas de backend, pero no acreditan el funcionamiento con datos reales ni el cumplimiento de aceptación. Para cerrar las HU del Hito 3 se deben ejecutar sus casos planificados y registrar resultado por criterio, evidencia y justificación de cada incumplimiento. Hasta entonces, HU #7–#10 permanecen pendientes; no se les atribuyen resultados de otras historias.
 

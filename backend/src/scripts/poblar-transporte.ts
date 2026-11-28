@@ -231,7 +231,11 @@ async function poblarBaseDeDatos() {
     // Normalizar textos (ej. quitar espacios extra)
     const recorridosNormalizados = recorridos.map(r => ({
       ...r,
-      calles_principales: r.calles_principales.replace(/\s+/g, ' ').trim()
+      calles_principales: r.calles_principales.replace(/\s+/g, ' ').trim(),
+      verificado: false,
+      fuente_url: null,
+      evidencia_fuente: null,
+      fecha_verificacion: null,
     }));
 
     const { data: recorridosData, error: recorridosError } = await supabase

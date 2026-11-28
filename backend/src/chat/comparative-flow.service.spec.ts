@@ -18,7 +18,10 @@ describe('ComparativeFlowService', () => {
         ComparativeFlowService,
         RutasService,
         ColectivosService,
-        TaxisService,
+        {
+          provide: TaxisService,
+          useValue: { getCentralesRadioTaxi: jest.fn().mockResolvedValue([]) },
+        },
         FormatterService,
         TelegramFormatterService,
       ],
@@ -58,9 +61,19 @@ describe('ComparativeFlowService', () => {
       expect(summary.comparativeData.colectivo).toBeDefined();
       expect(summary.comparativeData.radiotaxi).toBeDefined();
 
-      expect(summary.comparativeData.microbus.tarifaAdultoMayor).toContain('$150');
-      expect(summary.comparativeData.colectivo.tarifaAdultoMayor).toContain('$600');
+      expect(summary.comparativeData.microbus.tarifaAdultoMayor).toBe('No verificada');
+      expect(summary.comparativeData.colectivo.tarifaAdultoMayor).toBe('No verificada');
+      expect(summary.comparativeData.colectivo.lineas).toBe('Sin datos verificados');
+      const telegramColectivoSection = summary.telegramResponse.text
+        .split('2. COLECTIVO')[1]
+        ?.split('3. RADIO TAXI')[0] ?? '';
+      const webColectivoSection = summary.webResponse.text
+        .split('*2. Colectivo')[1]
+        ?.split('*3. Radio Taxi')[0] ?? '';
+      expect(telegramColectivoSection).not.toContain('Adulto Mayor');
+      expect(webColectivoSection).not.toContain('Adulto mayor');
       expect(summary.comparativeData.radiotaxi.tiempoEspera).toBeDefined();
+      expect(summary.hasMissingVerifiedOptions).toBe(true);
 
       expect(summary.webResponse).toBeDefined();
       expect(summary.telegramResponse).toBeDefined();
@@ -86,16 +99,48 @@ describe('ComparativeFlowService', () => {
       expect(res).toBeDefined();
       expect(res?.selectedType).toBe('colectivo');
       expect(res?.destination).toBe('Feria El Belloto');
-      expect(res?.web.options.length).toBeGreaterThan(0);
+      expect(res?.web.options).toEqual([]);
+      expect(res?.telegram.text).toContain('Aún no tenemos líneas de colectivos verificadas');
       expect(res?.telegram).toBeDefined();
     });
 
-    it('debe entregar centrales de radiotaxi al seleccionar opcion 3 o "taxi"', async () => {
+    it('debe omitir el beneficio adulto mayor en el detalle web de colectivos', async () => {
+      jest.spyOn(colectivosService, 'getColectivos').mockResolvedValue([
+        {
+          id: 'COL-1',
+          numeroLinea: 'Línea 1',
+          nombreLinea: 'Centro - Los Pinos',
+          comuna: 'Quilpué',
+          origen: 'Centro',
+          destino: 'Los Pinos',
+          trazadoIda: 'Centro - Los Pinos',
+          trazadoRegreso: 'Los Pinos - Centro',
+          frecuenciaMinutos: 5,
+          horarioInicio: '06:00',
+          horarioTermino: '22:00',
+          tarifaDiurna: 850,
+          tarifaNocturna: 1100,
+          tarifaAdultoMayor: 600,
+          accesibleAdultoMayor: false,
+          paraderosPrincipales: [],
+          fuenteUrl: 'https://example.com',
+        },
+      ]);
+
+      const result = await service.processSelection('user123', '2');
+
+      expect(result?.web.text).toContain('Tarifa general: *$850*');
+      expect(result?.web.text).not.toContain('Adulto Mayor');
+      expect(result?.web.text).not.toContain('$600');
+    });
+
+    it('debe advertir cuando no hay centrales de radiotaxi verificadas', async () => {
       const res = await service.processSelection('user123', '3');
       expect(res).toBeDefined();
       expect(res?.selectedType).toBe('radiotaxi');
-      expect(res?.web.showRadioTaxis).toBe(true);
-      expect(res?.web.taxis.length).toBeGreaterThan(0);
+      expect(res?.web.showRadioTaxis).toBe(false);
+      expect(res?.web.taxis).toEqual([]);
+      expect(res?.web.text).toContain('contacto y autorización verificados');
       expect(res?.telegram).toBeDefined();
     });
 

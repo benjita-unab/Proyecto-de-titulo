@@ -46,7 +46,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 600,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Garita Belloto Norte, Estación Belloto, Cruce Industrial, Plaza de Quilpué, Estación Metro Quilpué',
-    activo: true,
+    activo: false,
   },
   {
     id_colectivo: 'COL-QLP-02',
@@ -66,7 +66,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 600,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Feria El Belloto, Baden Powell con El Sol, Supermercado Santa Isabel Freire, Plaza Quilpué',
-    activo: true,
+    activo: false,
   },
   {
     id_colectivo: 'COL-QLP-03',
@@ -86,7 +86,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 650,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Plaza Los Pinos, Terminal Los Pinos, Cesfam Marga Marga, Plaza Quilpué, Estación Quilpué',
-    activo: true,
+    activo: false,
   },
   {
     id_colectivo: 'COL-QLP-04',
@@ -106,7 +106,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 550,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Garita Valencia, Paradero 28 Troncal, Estación Quilpué, Entrada Principal Hospital de Quilpué',
-    activo: true,
+    activo: false,
   },
   {
     id_colectivo: 'COL-QLP-05',
@@ -126,7 +126,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 550,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Terminal El Retiro, Colegio Cumming, Consultorio Pomar, Plaza de Quilpué',
-    activo: true,
+    activo: false,
   },
   {
     id_colectivo: 'COL-QLP-06',
@@ -146,7 +146,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 650,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Rotonda Colinas de Oro, Cruce Los Pinos, Supermercado Lider Quilpué, Estación Quilpué',
-    activo: true,
+    activo: false,
   },
   {
     id_colectivo: 'COL-QLP-08',
@@ -166,7 +166,7 @@ export const CATALOGO_COLECTIVOS_QUILPUE: ColectivoSeedData[] = [
     tarifa_adulto_mayor: 600,
     accesible_adulto_mayor: true,
     paraderos_principales: 'Sede Universitaria Paso Hondo, Paradero 24 Troncal, Plaza Quilpué, Hospital Quilpué',
-    activo: true,
+    activo: false,
   },
 ];
 
@@ -186,7 +186,7 @@ async function poblarColectivos() {
     nombre_linea: c.numero_linea + ' (Colectivo)',
     tipo_transporte: 'Colectivo',
     empresa_operadora: `Asociación Gremial Colectivos Quilpué - ${c.numero_linea}`,
-    activo: true,
+    activo: false,
   }));
 
   const { error: errorMedios } = await supabase
@@ -200,9 +200,17 @@ async function poblarColectivos() {
   }
 
   // 2. Insertar/actualizar catálogo en tabla colectivo
+  const catalogoPendiente = CATALOGO_COLECTIVOS_QUILPUE.map((colectivo) => ({
+    ...colectivo,
+    verificado: false,
+    fuente_url: null,
+    evidencia_fuente: null,
+    fecha_verificacion: null,
+    activo: false,
+  }));
   const { data, error } = await supabase
     .from('colectivo')
-    .upsert(CATALOGO_COLECTIVOS_QUILPUE, { onConflict: 'id_colectivo' })
+    .upsert(catalogoPendiente, { onConflict: 'id_colectivo' })
     .select();
 
   if (error) {

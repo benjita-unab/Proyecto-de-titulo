@@ -51,5 +51,36 @@ describe('FormatterService', () => {
       expect(response.options.length).toBe(0);
       expect(response.text).toContain('Disculpa, no alcancé a entender bien a qué lugar quieres ir.');
     });
+
+    it('muestra solo tarifa general para colectivos y mantiene la tarifa preferencial de microbús', () => {
+      const response = service.formatComparativeResponse('Los Pinos', {
+        microbus: {
+          lineas: '108',
+          tarifaGeneral: '$450',
+          tarifaAdultoMayor: '$150',
+          frecuencia: '10 min',
+        },
+        colectivo: {
+          lineas: 'Línea 1',
+          tarifaGeneral: '$850',
+          tarifaAdultoMayor: '$600',
+          frecuencia: '5 min',
+        },
+        radiotaxi: {
+          centrales: 'Central verificada',
+          tarifaBase: 'Consultar con la central',
+          tiempoEspera: 'No verificado',
+        },
+      });
+
+      const colectivoSection = response.text.split('*2. Colectivo')[1]?.split('*3. Radio Taxi')[0] ?? '';
+      const radiotaxiSection = response.text.split('*3. Radio Taxi')[1] ?? '';
+
+      expect(response.text).toContain('Adulto mayor: *$150*');
+      expect(colectivoSection).toContain('Tarifa general: *$850*');
+      expect(colectivoSection).not.toContain('Adulto mayor');
+      expect(radiotaxiSection).not.toContain('Adulto mayor');
+      expect(radiotaxiSection).not.toContain('Beneficio');
+    });
   });
 });

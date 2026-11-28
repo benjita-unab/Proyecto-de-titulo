@@ -15,6 +15,79 @@ interface UbicacionPrueba {
   requiereAlternativaTaxi: boolean;
 }
 
+export function distanciaVincentyMetros(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const a = 6378137;
+  const f = 1 / 298.257223563;
+  const b = (1 - f) * a;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const L = ((lng2 - lng1) * Math.PI) / 180;
+  const U1 = Math.atan((1 - f) * Math.tan(phi1));
+  const U2 = Math.atan((1 - f) * Math.tan(phi2));
+  const sinU1 = Math.sin(U1);
+  const cosU1 = Math.cos(U1);
+  const sinU2 = Math.sin(U2);
+  const cosU2 = Math.cos(U2);
+  let lambda = L;
+  let sinSigma = 0;
+  let cosSigma = 0;
+  let sigma = 0;
+  let sinAlpha = 0;
+  let cosSqAlpha = 0;
+  let cos2SigmaM = 0;
+
+  for (let i = 0; i < 100; i++) {
+    const sinLambda = Math.sin(lambda);
+    const cosLambda = Math.cos(lambda);
+    sinSigma = Math.sqrt(
+      (cosU2 * sinLambda) ** 2 +
+        (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) ** 2,
+    );
+    if (sinSigma === 0) return 0;
+    cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+    sigma = Math.atan2(sinSigma, cosSigma);
+    sinAlpha = (cosU1 * cosU2 * sinLambda) / sinSigma;
+    cosSqAlpha = 1 - sinAlpha ** 2;
+    cos2SigmaM = cosSqAlpha === 0 ? 0 : cosSigma - (2 * sinU1 * sinU2) / cosSqAlpha;
+    const C = (f / 16) * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
+    const nextLambda =
+      L +
+      (1 - C) *
+        f *
+        sinAlpha *
+        (sigma +
+          C *
+            sinSigma *
+            (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM ** 2)));
+    if (Math.abs(nextLambda - lambda) < 1e-12) {
+      lambda = nextLambda;
+      break;
+    }
+    lambda = nextLambda;
+    if (i === 99) throw new Error('No convergió el cálculo geodésico de referencia.');
+  }
+
+  const uSq = (cosSqAlpha * (a ** 2 - b ** 2)) / b ** 2;
+  const A = 1 + (uSq / 16384) * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
+  const B = (uSq / 1024) * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
+  const deltaSigma =
+    B *
+    sinSigma *
+    (cos2SigmaM +
+      (B / 4) *
+        (cosSigma * (-1 + 2 * cos2SigmaM ** 2) -
+          (B / 6) *
+            cos2SigmaM *
+            (-3 + 4 * sinSigma ** 2) *
+            (-3 + 4 * cos2SigmaM ** 2)));
+  return b * A * (sigma - deltaSigma);
+}
+
 const UBICACIONES_PRUEBA: UbicacionPrueba[] = [
   // 10 Centros Urbanos con paradas cercanas
   { id: 1, nombre: 'Plaza Quilpué (Centro)', categoria: 'Centro Urbano', comuna: 'Quilpué', lat: -33.0483, lng: -71.4441, distanciaEsperadaAproxMetros: 120, debeExpandirRadio: false, requiereAlternativaTaxi: false },
@@ -47,11 +120,29 @@ const UBICACIONES_PRUEBA: UbicacionPrueba[] = [
 
 export async function ejecutarPruebasSistemaHU3() {
   const service = new HaversineService();
-  const resultados: any[] = [];
+  const resultados: Array<{
+    id: number;
+    nombre: string;
+    categoria: UbicacionPrueba['categoria'];
+    comuna: string;
+    lat: number;
+    lng: number;
+    tiempoRespuestaMs: number;
+    paradaMasCercana: string;
+    distanciaCalculadaMetros: number | null;
+    distanciaReferenciaMetros: number | null;
+    errorDistanciaMetros: number | null;
+    radioAplicadoMetros: number | null;
+    radioAmpliado: boolean;
+    enlaceMapsValido: boolean;
+    googleMapsUrl: string;
+  }> = [];
   const tiemposRespuesta: number[] = [];
+  const totalCasos = UBICACIONES_PRUEBA.length;
 
   console.log('========================================================================');
-  console.log('   HU #3 - NIVEL 3: PRUEBAS DE SISTEMA (T10) - 20 UBICACIONES MUESTRA   ');
+  console.log('   PRUEBA DE SISTEMA HAVERSINE - 20 ESCENARIOS DE UBICACIÓN             ');
+  console.log('   Solo se evalúan resultados respaldados por paraderos verificados.     ');
   console.log('========================================================================');
 
   for (const item of UBICACIONES_PRUEBA) {
@@ -62,21 +153,20 @@ export async function ejecutarPruebasSistemaHU3() {
     const duracionMs = Math.round((tFin - tInicio) * 100) / 100;
     tiemposRespuesta.push(duracionMs);
 
-    const paradaNombre = resultado ? resultado.parada.nombre : 'Ninguna';
-    const distanciaObtenida = resultado ? resultado.distanciaMetros : 0;
-    const radioFinal = resultado ? resultado.radioAplicadoMetros : 0;
+    const paradaNombre = resultado ? resultado.parada.nombre : 'Ninguna verificada';
+    const distanciaObtenida = resultado?.distanciaMetros ?? null;
+    const radioFinal = resultado?.radioAplicadoMetros ?? null;
     const radioAmpliado = resultado ? resultado.radioAmpliado : false;
     const tieneMaps = Boolean(resultado?.googleMapsUrl?.startsWith('https://maps.google.com'));
     const tieneDirections = Boolean(resultado?.googleMapsDirectionsUrl?.startsWith('https://maps.google.com'));
 
-    // Calcular distancia manual geodésica pura para comparación de error
     const distanciaReferencia = resultado
-      ? service.calculateDistance(item.lat, item.lng, resultado.parada.latitud, resultado.parada.longitud)
-      : 0;
-    const errorDistancia = Math.abs(distanciaObtenida - distanciaReferencia);
-
-    // Verificación de alternativa segura cuando distancia > 500m
-    const ofreceAlternativa = distanciaObtenida > 500 ? radioAmpliado : true;
+      ? distanciaVincentyMetros(item.lat, item.lng, resultado.parada.latitud, resultado.parada.longitud)
+      : null;
+    const errorDistancia =
+      distanciaObtenida !== null && distanciaReferencia !== null
+        ? Math.abs(distanciaObtenida - distanciaReferencia)
+        : null;
 
     resultados.push({
       id: item.id,
@@ -93,13 +183,14 @@ export async function ejecutarPruebasSistemaHU3() {
       radioAplicadoMetros: radioFinal,
       radioAmpliado: radioAmpliado,
       enlaceMapsValido: tieneMaps && tieneDirections,
-      ofreceAlternativaPuntoSeguro: ofreceAlternativa,
       googleMapsUrl: resultado?.googleMapsUrl || '',
     });
 
     console.log(
       `[${item.id.toString().padStart(2, '0')}/20] ${item.nombre.padEnd(32)} -> ` +
-      `${distanciaObtenida.toFixed(1)}m | Radio: ${radioFinal}m | Latencia: ${duracionMs}ms | Maps: ${tieneMaps ? 'OK' : 'FAIL'}`
+      `${distanciaObtenida === null ? 'sin datos verificados' : `${distanciaObtenida.toFixed(1)}m`} | ` +
+      `Radio: ${radioFinal === null ? 'N/A' : `${radioFinal}m`} | ` +
+      `Latencia: ${duracionMs}ms | Maps: ${tieneMaps ? 'OK' : 'FAIL'}`
     );
   }
 
@@ -110,18 +201,33 @@ export async function ejecutarPruebasSistemaHU3() {
   const maxLatency = tiemposRespuesta[tiemposRespuesta.length - 1];
   const p95Latency = tiemposRespuesta[Math.floor(tiemposRespuesta.length * 0.95)];
 
-  const pctMaps = (resultados.filter((r) => r.enlaceMapsValido).length / resultados.length) * 100;
-  const pctErrorPreciso = (resultados.filter((r) => r.errorDistanciaMetros < 10).length / resultados.length) * 100;
-  const casosDistantes = resultados.filter((r) => r.distanciaCalculadaMetros > 500);
-  const pctAlternativaDistante = (casosDistantes.filter((r) => r.ofreceAlternativaPuntoSeguro).length / casosDistantes.length) * 100;
+  const casosEvaluables = resultados.filter((r) => r.errorDistanciaMetros !== null);
+  const pctMaps = (resultados.filter((r) => r.enlaceMapsValido).length / totalCasos) * 100;
+  const pctErrorPreciso =
+    casosEvaluables.length > 0
+      ? (casosEvaluables.filter((r) => r.errorDistanciaMetros !== null && r.errorDistanciaMetros < 10).length /
+          casosEvaluables.length) *
+        100
+      : 0;
 
   console.log('------------------------------------------------------------------------');
   console.log(`METRICAS AGREGADAS:`);
   console.log(`- Tiempo promedio: ${avgLatency} ms | Min: ${minLatency} ms | Max: ${maxLatency} ms | P95: ${p95Latency} ms`);
+  console.log(`- Casos evaluables con paradero verificado: ${casosEvaluables.length}/${totalCasos}`);
   console.log(`- Enlaces Google Maps funcionales: ${pctMaps}% (Meta: 100%)`);
-  console.log(`- Error geodésico < 10m: ${pctErrorPreciso}% (Meta: >= 85%)`);
-  console.log(`- Alternativa/Punto seguro en >500m: ${pctAlternativaDistante}% (Meta: >= 85%)`);
-  console.log(`- P95 <= 1500 ms: ${p95Latency <= 1500 ? 'CUMPLE' : 'NO CUMPLE'}`);
+  console.log(`- Error Haversine vs. Vincenty < 10m: ${pctErrorPreciso}% (Meta: >= 85% de casos evaluables)`);
+  console.log(
+    `- P95 local <= 1500 ms: ${
+      casosEvaluables.length === totalCasos
+        ? p95Latency <= 1500
+          ? 'CUMPLE'
+          : 'NO CUMPLE'
+        : 'NO EVALUABLE (sin cobertura verificada)'
+    }`,
+  );
+  if (casosEvaluables.length < totalCasos) {
+    console.log('- Resultado: NO EVALUABLE como prueba de exactitud; faltan paraderos verificados.');
+  }
   console.log('------------------------------------------------------------------------');
 
   // Guardar archivo CSV
@@ -139,6 +245,7 @@ export async function ejecutarPruebasSistemaHU3() {
     'Latitud',
     'Longitud',
     'Tiempo Respuesta (ms)',
+    'Caso Evaluable',
     'Parada Más Cercana',
     'Distancia Calculada (m)',
     'Distancia Referencia (m)',
@@ -146,7 +253,6 @@ export async function ejecutarPruebasSistemaHU3() {
     'Radio Aplicado (m)',
     'Radio Ampliado',
     'Enlace Maps Válido',
-    'Alternativa Ofrecida',
     'URL Google Maps'
   ].join(';');
 
@@ -159,14 +265,14 @@ export async function ejecutarPruebasSistemaHU3() {
       r.lat,
       r.lng,
       r.tiempoRespuestaMs,
+      r.errorDistanciaMetros !== null ? 'SÍ' : 'NO',
       `"${r.paradaMasCercana}"`,
-      r.distanciaCalculadaMetros,
-      r.distanciaReferenciaMetros,
-      r.errorDistanciaMetros,
-      r.radioAplicadoMetros,
+      r.distanciaCalculadaMetros ?? '',
+      r.distanciaReferenciaMetros ?? '',
+      r.errorDistanciaMetros ?? '',
+      r.radioAplicadoMetros ?? '',
       r.radioAmpliado ? 'SÍ' : 'NO',
       r.enlaceMapsValido ? 'SÍ' : 'NO',
-      r.ofreceAlternativaPuntoSeguro ? 'SÍ' : 'NO',
       `"${r.googleMapsUrl}"`
     ].join(';')
   );
@@ -180,10 +286,14 @@ export async function ejecutarPruebasSistemaHU3() {
     minLatency,
     maxLatency,
     p95Latency,
+    casosEvaluables: casosEvaluables.length,
     pctMaps,
     pctErrorPreciso,
-    pctAlternativaDistante,
-    cumpleTodo: pctMaps === 100 && p95Latency <= 1500 && pctErrorPreciso >= 85 && pctAlternativaDistante >= 85,
+    cumpleTodo:
+      casosEvaluables.length === totalCasos &&
+      pctMaps === 100 &&
+      p95Latency <= 1500 &&
+      pctErrorPreciso >= 85,
   };
 }
 

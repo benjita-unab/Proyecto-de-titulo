@@ -58,56 +58,20 @@ export class ExtractorTarifasService {
   constructor(private readonly extractor: IBrowserExtractor = new PuppeteerExtractor()) {}
 
   /**
-   * Extrae tarifas vigentes desde fuentes oficiales del MTT / DTPR / Moovit
+   * No publica tarifas cuando la página oficial no contiene valores legibles y verificables.
    */
   async extraerTarifasOficiales(): Promise<TarifaExtraida[]> {
-    const resultados: TarifaExtraida[] = [];
-    const fecha = new Date().toISOString();
-
-    // Fuente 1: Tarifas Gran Valparaíso y Marga Marga (DTPR / MTT)
     const urlDTPR = 'https://dtpr.mtt.gob.cl/';
-    try {
-      await this.extractor.fetchPageContent(urlDTPR);
-      // Mapeo oficial verificado de tarifas del Gran Valparaíso (Quilpué / Villa Alemana)
-      resultados.push(
-        {
-          tipoTransporte: 'Microbús',
-          lineaOCompania: 'TMV Gran Valparaíso (Fenur / Quilpué)',
-          tarifaGeneral: 450,
-          tarifaAdultoMayor: 150,
-          fuenteUrl: urlDTPR,
-          fechaActualizacion: fecha,
-        },
-        {
-          tipoTransporte: 'Colectivo',
-          lineaOCompania: 'Líneas Colectivos Quilpué (1, 2, 3, 4, 5)',
-          tarifaGeneral: 850,
-          tarifaAdultoMayor: 600,
-          fuenteUrl: 'https://quilpue.cl/transporte',
-          fechaActualizacion: fecha,
-        },
-        {
-          tipoTransporte: 'Radio Taxi',
-          lineaOCompania: 'Directorio Centrales Quilpué - Villa Alemana',
-          tarifaGeneral: 2800,
-          tarifaAdultoMayor: 2500,
-          fuenteUrl: 'https://inforadiotaxis.cl/valparaiso/quilpue',
-          fechaActualizacion: fecha,
-        },
+    const raw = await this.extractor.fetchPageContent(urlDTPR);
+    const text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+    if (!/colectivo.{0,80}(?:\$\s?\d{3,5}|\d{3,5}\s?pesos)/i.test(text)) {
+      console.warn(
+        `[ExtractorTarifas] La fuente ${urlDTPR} no publica un valor de tarifa de colectivo verificable; no se actualizaron tarifas.`,
       );
-    } catch (error: any) {
-      console.warn(`[ExtractorTarifas] Fallo en la extracción externa: ${error.message}. Entregando tarifas base consolidadas.`);
-      resultados.push({
-        tipoTransporte: 'Microbús',
-        lineaOCompania: 'TMV Oficial Quilpué',
-        tarifaGeneral: 450,
-        tarifaAdultoMayor: 150,
-        fuenteUrl: 'Consolidado Oficial',
-        fechaActualizacion: fecha,
-      });
     }
 
-    return resultados;
+    return [];
   }
 
   /**
@@ -123,6 +87,10 @@ export class ExtractorTarifasService {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     const tarifas = await this.extraerTarifasOficiales();
+    if (tarifas.length === 0) {
+      console.warn('[ExtractorTarifas] No hay tarifas verificables para sincronizar.');
+      return;
+    }
 
     for (const t of tarifas) {
       if (t.tipoTransporte === 'Microbús') {

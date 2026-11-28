@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as fs from 'fs';
-import { TelegramService } from './telegram.service';
+import { createMovitechKeyboard, TelegramService } from './telegram.service';
 import { TelegramUpdate } from './telegram.interface';
 
 jest.mock('axios');
@@ -40,6 +40,26 @@ describe('TelegramService', () => {
   describe('Instanciación', () => {
     it('debe estar definido correctamente', () => {
       expect(service).toBeDefined();
+    });
+
+    describe('createMovitechKeyboard', () => {
+      it('ofrece destinos y compartir ubicación con etiquetas visibles, sin simulaciones en producción', () => {
+        const keyboard = createMovitechKeyboard(false);
+        const labels = keyboard.keyboard.flat().map((button) => button.text);
+
+        expect(labels).toContain('📍 Compartir mi ubicación');
+        expect(labels).toContain('🏥 Hospital de Quilpué');
+        expect(labels).toContain('🎪 Feria El Belloto');
+        expect(labels.some((label) => label.startsWith('📍 Simular'))).toBe(false);
+      });
+
+      it('mantiene oculta la simulación por defecto y ofrece la Estación solo al solicitarla', () => {
+        const standardLabels = createMovitechKeyboard().keyboard.flat().map((button) => button.text);
+        const demoLabels = createMovitechKeyboard(true).keyboard.flat().map((button) => button.text);
+
+        expect(standardLabels).not.toContain('🧪 Simular desde Estación Quilpué');
+        expect(demoLabels).toContain('🧪 Simular desde Estación Quilpué');
+      });
     });
   });
 
@@ -921,6 +941,7 @@ describe('TelegramService', () => {
       const mockFormatter = {
         formatWelcomeMessage: jest.fn(),
         formatRouteResponse: jest.fn(),
+        escapeHtml: jest.fn((text: string) => text),
       };
 
       interactiveService = new TelegramService(
@@ -975,6 +996,120 @@ describe('TelegramService', () => {
             inline_keyboard: expect.any(Array),
           }),
         }),
+      );
+    });
+
+    it('debe mostrar simulación desde Estación Quilpué si faltan opciones verificadas', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { ok: true } });
+      mockComparativeFlow.generateComparativeSummary.mockResolvedValueOnce({
+        destination: 'Hospital de Quilpué',
+        comparativeData: {},
+        webResponse: {},
+        hasMissingVerifiedOptions: true,
+        telegramResponse: {
+          text: 'Opciones disponibles',
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [] },
+        },
+      });
+
+      await interactiveService.syncTelegramEventWithRoutes(
+        112233,
+        '🏥 Hospital de Quilpué',
+        'Ana',
+      );
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          text: expect.stringContaining('Faltan opciones de transporte verificadas'),
+          reply_markup: expect.objectContaining({
+            keyboard: expect.arrayContaining([
+              expect.arrayContaining([
+                expect.objectContaining({ text: '🧪 Simular desde Estación Quilpué' }),
+              ]),
+            ]),
+          }),
+        }),
+      );
+    });
+
+    it('debe responder con seguridad y mostrar simulación si no hay radiotaxis verificados', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { ok: true } });
+      const noDataTaxisService = {
+        getCentralesRadioTaxi: jest.fn().mockResolvedValue([]),
+      };
+      const noDataFormatter = {
+        escapeHtml: jest.fn((text: string) => text),
+        formatRadioTaxisResponse: jest.fn().mockReturnValue({
+        text: 'No hay contactos verificables disponibles.',
+        parse_mode: 'HTML',
+        }),
+      };
+      const noDataService = new TelegramService(
+        { get: jest.fn().mockReturnValue(mockBotToken) } as any,
+        noDataFormatter as any,
+        undefined,
+        undefined,
+        undefined,
+        noDataTaxisService as any,
+      );
+
+      const result = await noDataService.syncTelegramEventWithRoutes(
+        112233,
+        '🚕 Ver Radio Taxis Quilpué',
+        'Ana',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.replyText).toContain('No hay contactos verificables');
+      expect(noDataTaxisService.getCentralesRadioTaxi).toHaveBeenCalledWith('Quilpué');
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/sendMessage'),
+        expect.objectContaining({
+          text: expect.stringContaining('No hay contactos verificables'),
+          reply_markup: expect.objectContaining({
+            keyboard: expect.arrayContaining([
+              expect.arrayContaining([
+                expect.objectContaining({ text: '🧪 Simular desde Estación Quilpué' }),
+              ]),
+            ]),
+          }),
+        }),
+      );
+    });
+
+    it('debe procesar la simulación de estación sin inventar paraderos', async () => {
+      mockedAxios.post.mockResolvedValue({ data: { ok: true } });
+      const mockHaversine = {
+        findClosestStop: jest.fn().mockResolvedValue(null),
+      };
+      const demoFormatter = {
+        formatNearbyStopResponse: jest.fn(),
+      };
+      const demoService = new TelegramService(
+        { get: jest.fn().mockReturnValue(mockBotToken) } as any,
+        demoFormatter as any,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mockHaversine as any,
+      );
+
+      const result = await demoService.syncTelegramEventWithRoutes(
+        112233,
+        '🧪 Simular desde Estación Quilpué',
+      );
+
+      expect(result.replyText).toContain('Estación Quilpué');
+      expect(result.replyText).toContain('No corresponde a tu GPS real');
+      expect(result.replyText).toContain('no hay paraderos verificados');
+      expect(mockHaversine.findClosestStop).toHaveBeenCalledWith(
+        -33.045,
+        -71.4428,
+        { radioInicialMetros: 500 },
       );
     });
 

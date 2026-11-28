@@ -26,20 +26,18 @@ describe('HU #3 - Nivel 1: Pruebas Unitarias de HaversineService (T8)', () => {
     });
 
     it('debe calcular con referencia independiente Plaza Quilpué -> Estación Quilpué con error < 10m', () => {
-      // Plaza Quilpué: (-33.0480, -71.4425), Estación Quilpué: (-33.0445, -71.4435)
-      // Distancia geodésica elipsoidal / cálculo de referencia independiente ≈ 400.1 metros
-      const distanciaReferenciaIndependiente = 400.1;
-      const dist = service.calculateDistance(-33.0480, -71.4425, -33.0445, -71.4435);
+      // Coordenadas declaradas en el catálogo: Plaza (-33.0480, -71.4425), estación (-33.0465, -71.4445).
+      const distanciaReferenciaIndependiente = 250.1;
+      const dist = service.calculateDistance(-33.0480, -71.4425, -33.0465, -71.4445);
       const error = Math.abs(dist - distanciaReferenciaIndependiente);
 
       expect(error).toBeLessThan(10);
     });
 
     it('debe calcular con referencia independiente Plaza Quilpué -> Hospital de Quilpué con error < 10m', () => {
-      // Plaza Quilpué: (-33.0480, -71.4425), Hospital Quilpué: (-33.0416, -71.4395)
-      // Distancia de referencia independiente ≈ 764.5 metros
-      const distanciaReferenciaIndependiente = 764.5;
-      const dist = service.calculateDistance(-33.0480, -71.4425, -33.0416, -71.4395);
+      // Coordenadas declaradas en el catálogo: Hospital (-33.0520, -71.4480).
+      const distanciaReferenciaIndependiente = 678.7;
+      const dist = service.calculateDistance(-33.0480, -71.4425, -33.0520, -71.4480);
       const error = Math.abs(dist - distanciaReferenciaIndependiente);
 
       expect(error).toBeLessThan(10);
@@ -119,6 +117,8 @@ describe('HU #3 - Nivel 1: Pruebas Unitarias de HaversineService (T8)', () => {
         longitud: -71.4403, // ~205m
         comuna: 'Quilpué',
         esPuntoSeguro: false,
+        verificado: true,
+        fuenteUrl: 'https://mtt.gob.cl/recorrido',
       },
       {
         idParada: 'PAR-02',
@@ -129,6 +129,8 @@ describe('HU #3 - Nivel 1: Pruebas Unitarias de HaversineService (T8)', () => {
         longitud: -71.4339, // ~800m
         comuna: 'Quilpué',
         esPuntoSeguro: true,
+        verificado: true,
+        fuenteUrl: 'https://mtt.gob.cl/recorrido',
       },
     ];
 
@@ -173,6 +175,8 @@ describe('HU #3 - Nivel 1: Pruebas Unitarias de HaversineService (T8)', () => {
           longitud: -71.4420,
           comuna: 'Quilpué',
           esPuntoSeguro: false,
+          verificado: true,
+          fuenteUrl: 'https://mtt.gob.cl/recorrido',
         },
         {
           idParada: 'P-SEGURO',
@@ -181,6 +185,8 @@ describe('HU #3 - Nivel 1: Pruebas Unitarias de HaversineService (T8)', () => {
           longitud: -71.4410,
           comuna: 'Quilpué',
           esPuntoSeguro: true,
+          verificado: true,
+          fuenteUrl: 'https://mtt.gob.cl/recorrido',
         },
       ];
       jest.spyOn(service, 'getParadasList').mockResolvedValue(paradas);
